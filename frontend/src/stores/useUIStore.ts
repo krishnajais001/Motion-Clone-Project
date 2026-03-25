@@ -15,21 +15,26 @@ interface UIStore {
     searchOpen: boolean;
     /** Current colour theme */
     theme: Theme;
+    /** Whether the AI assistant sidebar is open */
+    chatOpen: boolean;
 
     toggleSidebar: () => void;
     openSearch: () => void;
     closeSearch: () => void;
     toggleTheme: () => void;
+    toggleChat: () => void;
 }
 
 export const useUIStore = create<UIStore>((set) => ({
     sidebarOpen: true,
     searchOpen: false,
     theme: getInitialTheme(),
+    chatOpen: false,
 
     toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
     openSearch: () => set({ searchOpen: true }),
     closeSearch: () => set({ searchOpen: false }),
+    toggleChat: () => set((state) => ({ chatOpen: !state.chatOpen })),
     toggleTheme: () =>
         set((state) => {
             const next: Theme = state.theme === 'dark' ? 'light' : 'dark';

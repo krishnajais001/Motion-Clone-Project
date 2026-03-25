@@ -7,6 +7,8 @@ import AppPage from '@/pages/AppPage';
 import HomePage from '@/pages/HomePage';
 import PageView from '@/pages/PageView';
 import SettingsPage from '@/pages/SettingsPage';
+import TasksPage from '@/pages/TasksPage';
+import CalendarPage from '@/pages/CalendarPage';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useUIStore } from '@/stores/useUIStore';
 
@@ -49,6 +51,8 @@ function App() {
           >
             <Route index element={<HomePage />} />
             <Route path="page/:id" element={<PageView />} />
+            <Route path="tasks" element={<TasksPage />} />
+            <Route path="calendar" element={<CalendarPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 

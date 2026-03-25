@@ -4,9 +4,10 @@ import { Sidebar } from '@/components/sidebar/Sidebar';
 import { SearchModal } from '@/components/search/SearchModal';
 import { useUIStore } from '@/stores/useUIStore';
 import { usePages } from '@/hooks/usePages';
+import { ChatSidebar } from '@/features/chat/ChatSidebar';
 
 export default function AppPage() {
-    const { openSearch } = useUIStore();
+    const { openSearch, chatOpen, toggleChat } = useUIStore();
 
     // Load all user pages on mount
     usePages();
@@ -31,6 +32,9 @@ export default function AppPage() {
             <main className="relative flex flex-1 flex-col overflow-hidden">
                 <Outlet />
             </main>
+
+            {/* AI Assistant Sidebar (Overlay) */}
+            {chatOpen && <ChatSidebar onClose={toggleChat} />}
 
             {/* Search modal (global) */}
             <SearchModal />

@@ -10,6 +10,7 @@ import {
     LogOut,
     Sun,
     Moon,
+    Bot,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePageStore } from '@/stores/usePageStore';
@@ -20,8 +21,8 @@ import { PageTreeItem } from './PageTreeItem';
 
 export function Sidebar() {
     const navigate = useNavigate();
-    const { pages, addPage, removePage } = usePageStore();
-    const { sidebarOpen, toggleSidebar, openSearch, theme, toggleTheme } = useUIStore();
+    const { pages, addPage, removePage, updatePage } = usePageStore();
+    const { sidebarOpen, toggleSidebar, openSearch, theme, toggleTheme, toggleChat } = useUIStore();
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
     // Build tree from flat page list
@@ -74,13 +75,21 @@ export function Sidebar() {
 
     const handleDelete = useCallback(
         (id: string) => {
-            // Simple confirmation
             if (window.confirm('Delete this page and all its children?')) {
                 removePage(id);
                 navigate('/app');
             }
         },
         [removePage, navigate]
+    );
+
+    const handleRename = useCallback(
+        (id: string, newTitle: string) => {
+            if (newTitle.trim()) {
+                updatePage(id, { title: newTitle.trim() });
+            }
+        },
+        [updatePage]
     );
 
     const handleNewPage = useCallback(() => {
@@ -101,7 +110,7 @@ export function Sidebar() {
                     sidebarOpen ? 'w-60' : 'w-0 overflow-hidden border-r-0'
                 )}
             >
-                <div className="flex min-w-[240px] flex-1 flex-col">
+                <div className="flex min-w-[240px] flex-1 flex-col min-h-0">
                     {/* ─── Workspace Header ─── */}
                     <div className="flex h-12 items-center justify-between px-3">
                         <div className="flex items-center gap-2">
@@ -140,6 +149,7 @@ export function Sidebar() {
                             <Home className="h-4 w-4" />
                             <span>Home</span>
                         </button>
+
                     </div>
 
                     {/* ─── Divider ─── */}
@@ -149,8 +159,16 @@ export function Sidebar() {
                     <div className="flex-1 overflow-y-auto px-2">
                         <div className="mb-1 flex items-center justify-between px-2">
                             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                Pages
+                                Workspace
                             </span>
+                            <button
+                                onClick={handleNewPage}
+                                className="flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                                aria-label="New page"
+                                title="New page"
+                            >
+                                <Plus className="h-3.5 w-3.5" />
+                            </button>
                         </div>
 
                         {tree.length === 0 ? (
@@ -173,6 +191,7 @@ export function Sidebar() {
                                     onToggleExpand={handleToggleExpand}
                                     onCreateChild={handleCreateChild}
                                     onDelete={handleDelete}
+                                    onRename={handleRename}
                                 />
                             ))
                         )}
@@ -182,17 +201,17 @@ export function Sidebar() {
                     <div className="space-y-0.5 border-t border-sidebar-border px-2 py-2">
                         <button
                             className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                            onClick={handleNewPage}
-                        >
-                            <Plus className="h-4 w-4" />
-                            <span>New Page</span>
-                        </button>
-                        <button
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                             onClick={() => navigate('/app/settings')}
                         >
                             <Settings className="h-4 w-4" />
                             <span>Settings</span>
+                        </button>
+                        <button
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                            onClick={toggleChat}
+                        >
+                            <Bot className="h-4 w-4" />
+                            <span>Notion AI</span>
                         </button>
                         <button
                             id="theme-toggle"

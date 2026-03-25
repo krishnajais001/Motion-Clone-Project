@@ -14,6 +14,8 @@ process.on('unhandledRejection', (reason, promise) => {
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import pageRoutes from './routes/page.routes';
+import taskRoutes from './routes/task.routes';
+import eventRoutes from './routes/event.routes';
 import { authenticate } from './middleware';
 
 const app = express();
@@ -36,8 +38,10 @@ app.get('/', (_req: Request, res: Response) => {
 // Protected routes (JWT required)
 // ---------------------------------------------------------------------------
 
-// Register page routes
+// Register routes
 app.use('/api/pages', pageRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/events', eventRoutes);
 
 /**
  * Example protected route.
