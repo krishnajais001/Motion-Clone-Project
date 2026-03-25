@@ -1,10 +1,20 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
+process.on('uncaughtException', (err) => {
+    console.error('FATAL LOG: Uncaught Exception:', err);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('FATAL LOG: Unhandled Rejection at:', promise, 'reason:', reason);
+    process.exit(1);
+});
+
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import pageRoutes from './routes/page.routes';
 import { authenticate } from './middleware';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env['PORT'] || 3000;
@@ -43,9 +53,15 @@ app.get('/api/me', authenticate, (req: Request, res: Response) => {
     });
 });
 
+console.log('Attempting to start server on port:', PORT);
+
 // ---------------------------------------------------------------------------
 // Start server
 // ---------------------------------------------------------------------------
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+server.on('error', (err) => {
+    console.error('SERVER ERROR:', err);
 });

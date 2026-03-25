@@ -52,11 +52,14 @@ export const authenticate = async (
         const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
         if (error || !user) {
+            console.error('❌ Auth Verification Failed:', error?.message);
             return res.status(401).json({
                 error: 'Unauthorized',
                 message: error?.message || 'Invalid session.',
             });
         }
+
+        console.log('✅ Auth Successful for user:', user.email);
 
         // Attach user to request
         req.user = {
