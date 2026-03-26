@@ -36,8 +36,8 @@ function ToolbarButton({ onClick, isActive, children, title }: ToolbarButtonProp
             className={cn(
                 'flex h-7 w-7 items-center justify-center rounded-sm transition-colors',
                 isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
             )}
         >
             {children}

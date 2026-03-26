@@ -12,54 +12,54 @@
 :root {
   --background: oklch(1 0 0);
   /* #FFFFFF - Page background */
-  --foreground: oklch(0.247 0.006 56);
-  /* #37352F - Body text */
+  --foreground: oklch(0 0 0);
+  /* #000000 - Body text */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.247 0.006 56);
+  --card-foreground: oklch(0 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.247 0.006 56);
-  --primary: oklch(0.247 0.006 56);
-  /* #37352F - Primary actions */
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.971 0.001 90);
-  /* #F7F7F5 - Sidebar bg */
-  --secondary-foreground: oklch(0.247 0.006 56);
-  --muted: oklch(0.971 0.001 90);
-  /* #F7F7F5 */
-  --muted-foreground: oklch(0.52 0.006 70);
-  /* #787774 - Placeholders */
-  --accent: oklch(0.94 0.002 90);
-  /* #EFEFED - Hover */
-  --accent-foreground: oklch(0.247 0.006 56);
-  --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.925 0.002 90);
-  /* #E9E9E7 - Dividers */
-  --input: oklch(0.925 0.002 90);
-  --ring: oklch(0.55 0.15 250);
-  /* #2383E2 - Focus ring */
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  --radius: 0.375rem;
-  --sidebar: oklch(0.971 0.001 90);
-  /* #F7F7F5 */
-  --sidebar-foreground: oklch(0.247 0.006 56);
-  --sidebar-primary: oklch(0.247 0.006 56);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.94 0.002 90);
-  /* #EFEFED */
-  --sidebar-accent-foreground: oklch(0.247 0.006 56);
-  --sidebar-border: oklch(0.925 0.002 90);
-  /* #E9E9E7 */
-  --sidebar-ring: oklch(0.55 0.15 250);
+  --popover-foreground: oklch(0 0 0);
+  --primary: oklch(0 0 0);
+  /* #000000 - Primary actions */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(1 0 0);
+  /* #FFFFFF - Sidebar bg */
+  --secondary-foreground: oklch(0 0 0);
+  --muted: oklch(1 0 0);
+  /* #FFFFFF */
+  --muted-foreground: oklch(0.4 0 0);
+  /* Dark grey for muted text */
+  --accent: oklch(0.1 0 0);
+  /* Very dark grey (almost black) for hover background */
+  --accent-foreground: oklch(1 0 0);
+  /* White for text on hover background */
+  --border: oklch(0 0 0);
+  /* #000000 - Dividers */
+  --input: oklch(1 0 0);
+  --ring: oklch(0 0 0);
+  /* #000000 - Focus ring */
+  --chart-1: oklch(0 0 0);
+  --chart-2: oklch(0 0 0);
+  --chart-3: oklch(0 0 0);
+  --chart-4: oklch(0 0 0);
+  --chart-5: oklch(0 0 0);
+  --radius: 0rem;
+  --sidebar: oklch(1 0 0);
+  /* #FFFFFF */
+  --sidebar-foreground: oklch(0 0 0);
+  --sidebar-primary: oklch(0 0 0);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.96 0 0);
+  /* Light grey hover */
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(0.9 0 0);
+  /* #000000 */
+  --sidebar-ring: oklch(0 0 0);
 
   /* Notion-specific custom tokens */
-  --notion-text-link: oklch(0.55 0.15 250);
-  /* #2383E2 */
-  --notion-hover: oklch(0.94 0.002 90);
-  /* #EFEFED */
+  --notion-text-link: oklch(0 0 0);
+  /* #000000 */
+  --notion-hover: oklch(0 0 0);
+  /* #000000 */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -69,8 +69,7 @@
 
 .dark {
   /* Notion dark mode — warm near-blacks instead of cold grays */
-  --background: oklch(0.165 0.004 56);
-  /* #191919 - Notion's actual dark background */
+  --background: oklch(0.165 0.004 56.5); /* #191919 */
   --foreground: oklch(0.938 0.005 56);
   /* #FFFFFFE6 approximated */
   --card: oklch(0.195 0.004 56);
@@ -98,8 +97,7 @@
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.195 0.004 56);
-  /* slightly lighter than page */
+  --sidebar: oklch(0.165 0.004 56.5); /* #191919 */
   --sidebar-foreground: oklch(0.938 0.005 56);
   --sidebar-primary: oklch(0.938 0.005 56);
   --sidebar-primary-foreground: oklch(0.165 0.004 56);
@@ -114,49 +112,84 @@
   --notion-hover: oklch(0.27 0.006 56);
 }
 
+/* ─── Tiptap Editor Brutalist Overrides ─── */
+:root {
+  --tt-radius-sm: 0;
+  --tt-radius-md: 0;
+  --tt-radius-lg: 0;
+  --tt-radius-xl: 0;
+  --tt-transition-duration-default: 0s;
+  
+  --tt-toolbar-bg-color: #ffffff;
+  --tt-toolbar-border-color: #000000;
+  --tt-shadow-elevated-md: 4px 4px 0px #000000;
+  
+  --tt-button-default-bg-color: transparent;
+  --tt-button-default-text-color: #000000;
+  --tt-button-default-icon-color: #000000;
+  --tt-button-default-icon-sub-color: #000000;
+  --tt-button-default-dropdown-arrows-color: #000000;
+  
+  --tt-button-hover-bg-color: #000000;
+  --tt-button-hover-text-color: #ffffff;
+  --tt-button-hover-icon-color: #ffffff;
+  --tt-button-hover-icon-sub-color: #ffffff;
+  --tt-button-hover-dropdown-arrows-color: #ffffff;
+  
+  --tt-button-active-bg-color: #000000;
+  --tt-button-active-text-color: #ffffff;
+  --tt-button-active-icon-color: #ffffff;
+  --tt-button-active-icon-sub-color: #ffffff;
+  --tt-button-active-dropdown-arrows-color: #ffffff;
+  
+  /* Additional hard overrides to guarantee black and white */
+  --tt-gray-light-a-100: #000000;
+  --tt-gray-white-a-100: #000000;
+  --tt-gray-100: #000000;
+  --tt-gray-200: #000000;
+  --tt-gray-300: #000000;
+  --tt-gray-400: #000000;
+  --tt-gray-500: #000000;
+}
 
-@theme inline {
-  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
-  --color-background: var(--background);
-  --color-notion-link: var(--notion-text-link);
-  --color-notion-hover: var(--notion-hover);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+.dark {
+  --tt-toolbar-bg-color: #191919;
+  --tt-toolbar-border-color: rgba(255, 255, 255, 0.1);
+  --tt-shadow-elevated-md: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  
+  --tt-button-default-text-color: #f0f0f0;
+  --tt-button-default-icon-color: #f0f0f0;
+  
+  --tt-button-hover-bg-color: rgba(255, 255, 255, 0.1);
+  --tt-button-hover-text-color: #ffffff;
+  --tt-button-hover-icon-color: #ffffff;
+  
+  --tt-button-active-bg-color: rgba(255, 255, 255, 0.15);
+  --tt-button-active-text-color: #ffffff;
+  --tt-button-active-icon-color: #ffffff;
+  
+  --tt-gray-white-a-100: #191919;
+  --tt-gray-100: #191919;
+  --tt-gray-200: #191919;
+  --tt-gray-300: #191919;
+  --tt-gray-400: #191919;
+  --tt-gray-500: #191919;
+
+  /* Force TipTap specific black to our unified gray */
+  --black: #191919;
+}
+
+.tiptap-toolbar[data-variant="floating"], .tiptap-popover {
+  border: 1px solid #000 !important;
+  border-radius: 0 !important;
+  box-shadow: 4px 4px 0px #000 !important;
+}
+
+.dark .tiptap-toolbar[data-variant="floating"], 
+.dark .tiptap-popover {
+  background: #202020 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
 }
 
 @layer base {
@@ -182,6 +215,7 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  background: transparent;
 }
 
 .motion-editor-content {
@@ -226,12 +260,15 @@
   overflow-y: auto;
   background: var(--background);
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  box-shadow:
-    0 4px 6px -1px rgb(0 0 0 / 0.08),
-    0 10px 15px -3px rgb(0 0 0 / 0.06);
-  padding: 0.25rem;
+  border-radius: 6px;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  padding: 0;
   animation: slash-menu-in 0.1s ease-out;
+}
+
+.dark .slash-menu {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);
 }
 
 @keyframes slash-menu-in {
@@ -247,13 +284,18 @@
 }
 
 .slash-menu-header {
-  padding: 0.25rem 0.5rem;
+  padding: 0.5rem 0.5rem;
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--muted-foreground);
-  margin-bottom: 0.125rem;
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
+
+.dark .slash-menu-header {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 
 .slash-menu-item {
@@ -261,18 +303,19 @@
   align-items: center;
   gap: 0.625rem;
   width: 100%;
-  padding: 0.375rem 0.5rem;
-  border-radius: 0.25rem;
+  padding: 0.5rem 0.5rem;
+  border-radius: 0;
   text-align: left;
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: background-color 0.1s;
+  transition: all 0s;
 }
 
 .slash-menu-item:hover,
 .slash-menu-item--active {
-  background-color: var(--accent);
+  background-color: var(--foreground);
+  color: var(--background);
 }
 
 .slash-menu-item__icon {
@@ -281,9 +324,9 @@
   justify-content: center;
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: 0.25rem;
-  background-color: var(--secondary);
-  color: var(--foreground);
+  border-radius: 0;
+  background-color: transparent;
+  color: inherit; /* inherit so it swaps automatically on hover */
   flex-shrink: 0;
 }
 
@@ -308,9 +351,16 @@
 
 /* ─── Thin Scrollbar ─── */
 aside,
-[class*="overflow-y-auto"] {
+[class*="overflow-y-auto"],
+.custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: oklch(0.82 0 0) transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.dark aside,
+.dark [class*="overflow-y-auto"],
+.dark .custom-scrollbar {
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
 aside::-webkit-scrollbar,

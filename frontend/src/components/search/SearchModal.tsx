@@ -136,7 +136,7 @@ export function SearchModal() {
                                         'flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition-colors',
                                         index === selectedIndex
                                             ? 'bg-accent text-accent-foreground'
-                                            : 'text-foreground hover:bg-accent/60'
+                                            : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                                     )}
                                     onClick={() => handleSelect(page.id)}
                                     onMouseEnter={() => setSelectedIndex(index)}

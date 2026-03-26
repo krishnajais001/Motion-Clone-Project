@@ -9,6 +9,7 @@ import PageView from '@/pages/PageView';
 import SettingsPage from '@/pages/SettingsPage';
 import TasksPage from '@/pages/TasksPage';
 import CalendarPage from '@/pages/CalendarPage';
+import StudyPage from '@/pages/StudyPage';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useUIStore } from '@/stores/useUIStore';
 
@@ -53,6 +54,7 @@ function App() {
             <Route path="page/:id" element={<PageView />} />
             <Route path="tasks" element={<TasksPage />} />
             <Route path="calendar" element={<CalendarPage />} />
+            <Route path="study" element={<StudyPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 

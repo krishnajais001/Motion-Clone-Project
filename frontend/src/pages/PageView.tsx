@@ -91,14 +91,14 @@ export default function PageView() {
                             onEmojiSelect={(emoji) => updatePage(activePage.id, { emoji_icon: emoji })}
                             hasIcon={false}
                         >
-                            <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+                            <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground">
                                 <SmilePlus className="h-3.5 w-3.5" />
                                 Add icon
                             </button>
                         </EmojiPicker>
                     )}
                     {!activePage.thumbnail_url && (
-                        <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+                        <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground">
                             <ImagePlus className="h-3.5 w-3.5" />
                             Add cover
                         </button>

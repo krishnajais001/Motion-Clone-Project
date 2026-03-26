@@ -73,9 +73,9 @@ export function PageTreeItem({
                 className={cn(
                     'group flex h-8 cursor-pointer items-center gap-0.5 rounded-md px-2 text-sm transition-colors duration-100',
                     isActive
-                        ? 'bg-accent text-accent-foreground font-medium'
-                        : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
-                    isRenaming && 'bg-accent/60'
+                        ? 'bg-black/5 dark:bg-white/10 font-medium text-black dark:text-white'
+                        : 'font-medium text-gray-500 hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white',
+                    isRenaming && 'bg-black/5 dark:bg-white/10'
                 )}
                 style={{ paddingLeft: `${level * 16 + 8}px` }}
                 onClick={() => { if (!isRenaming) navigate(`/app/page/${node.id}`); }}
@@ -85,7 +85,7 @@ export function PageTreeItem({
                 {/* Expand / collapse toggle */}
                 <button
                     className={cn(
-                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-sm transition-colors hover:bg-accent',
+                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-sm transition-colors hover:bg-accent hover:text-accent-foreground',
                         !hasChildren && 'invisible'
                     )}
                     onClick={(e) => {
@@ -129,7 +129,7 @@ export function PageTreeItem({
                     <div className="flex shrink-0 items-center gap-0.5">
                         {/* Rename */}
                         <button
-                            className="flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                            className="flex h-6 w-6 items-center justify-center rounded-sm text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setRenameValue(node.title);
@@ -143,7 +143,7 @@ export function PageTreeItem({
 
                         {/* Delete */}
                         <button
-                            className="flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                            className="flex h-6 w-6 items-center justify-center rounded-sm text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onDelete(node.id);
@@ -156,7 +156,7 @@ export function PageTreeItem({
 
                         {/* Add child */}
                         <button
-                            className="flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                            className="flex h-6 w-6 items-center justify-center rounded-sm text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onCreateChild(node.id);
@@ -164,7 +164,7 @@ export function PageTreeItem({
                             aria-label="Add child page"
                             title="Add page"
                         >
-                            <Plus className="h-3.5 w-3.5" />
+                            <Plus className="h-3.5 w-3.5 stroke-[3px]" />
                         </button>
                     </div>
                 )}

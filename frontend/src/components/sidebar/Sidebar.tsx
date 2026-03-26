@@ -5,12 +5,13 @@ import {
     Home,
     Plus,
     Settings,
-    ChevronsLeft,
-    ChevronsRight,
+    PanelLeft,
     LogOut,
     Sun,
     Moon,
     Bot,
+    Calendar,
+    Timer
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePageStore } from '@/stores/usePageStore';
@@ -114,7 +115,7 @@ export function Sidebar() {
                     {/* ─── Workspace Header ─── */}
                     <div className="flex h-12 items-center justify-between px-3">
                         <div className="flex items-center gap-2">
-                            <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-foreground text-xs font-semibold text-background">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-black text-xs font-semibold text-white" style={{ backgroundColor: '#000000', color: '#ffffff' }}>
                                 M
                             </div>
                             <span className="text-sm font-semibold text-sidebar-foreground">
@@ -122,18 +123,18 @@ export function Sidebar() {
                             </span>
                         </div>
                         <button
-                            className="flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                            className="flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
                             onClick={toggleSidebar}
                             aria-label="Collapse sidebar"
                         >
-                            <ChevronsLeft className="h-4 w-4" />
+                            <PanelLeft className="h-4 w-4" />
                         </button>
                     </div>
 
                     {/* ─── Quick Actions ─── */}
                     <div className="space-y-0.5 px-2">
                         <button
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
                             onClick={openSearch}
                         >
                             <Search className="h-4 w-4" />
@@ -143,11 +144,25 @@ export function Sidebar() {
                             </kbd>
                         </button>
                         <button
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
                             onClick={() => navigate('/app')}
                         >
                             <Home className="h-4 w-4" />
                             <span>Home</span>
+                        </button>
+                        <button
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                            onClick={() => navigate('/app/calendar')}
+                        >
+                            <Calendar className="h-4 w-4" />
+                            <span>My Planner</span>
+                        </button>
+                        <button
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                            onClick={() => navigate('/app/study')}
+                        >
+                            <Timer className="h-4 w-4" />
+                            <span>Study Mode</span>
                         </button>
 
                     </div>
@@ -163,7 +178,7 @@ export function Sidebar() {
                             </span>
                             <button
                                 onClick={handleNewPage}
-                                className="flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                                className="flex h-5 w-5 items-center justify-center rounded-sm text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
                                 aria-label="New page"
                                 title="New page"
                             >
@@ -200,14 +215,14 @@ export function Sidebar() {
                     {/* ─── Bottom Actions ─── */}
                     <div className="space-y-0.5 border-t border-sidebar-border px-2 py-2">
                         <button
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
                             onClick={() => navigate('/app/settings')}
                         >
                             <Settings className="h-4 w-4" />
                             <span>Settings</span>
                         </button>
                         <button
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
                             onClick={toggleChat}
                         >
                             <Bot className="h-4 w-4" />
@@ -215,7 +230,7 @@ export function Sidebar() {
                         </button>
                         <button
                             id="theme-toggle"
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
                             onClick={toggleTheme}
                             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                         >
@@ -227,7 +242,7 @@ export function Sidebar() {
                             <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
                         </button>
                         <button
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
                             onClick={handleLogout}
                         >
                             <LogOut className="h-4 w-4" />
@@ -240,13 +255,13 @@ export function Sidebar() {
             {/* Collapsed sidebar toggle */}
             {!sidebarOpen && (
                 <button
-                    className="fixed left-2 top-3 z-50 flex h-7 w-7 items-center justify-center rounded-md bg-background text-muted-foreground shadow-sm ring-1 ring-border transition-colors hover:bg-accent hover:text-foreground"
+                    className="fixed left-2 top-3 z-50 flex h-7 w-7 items-center justify-center rounded-sm bg-white dark:bg-sidebar text-gray-500 border border-gray-200 dark:border-white/10 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
                     onClick={toggleSidebar}
                     aria-label="Expand sidebar"
                 >
-                    <ChevronsRight className="h-4 w-4" />
+                    <PanelLeft className="h-4 w-4" />
                 </button>
             )}
         </>
     );
-}
+};
