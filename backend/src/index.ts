@@ -16,6 +16,7 @@ import cors from 'cors';
 import pageRoutes from './routes/page.routes';
 import taskRoutes from './routes/task.routes';
 import eventRoutes from './routes/event.routes';
+import whiteboardRoutes from './routes/whiteboard.routes';
 import { authenticate } from './middleware';
 
 const app = express();
@@ -42,6 +43,7 @@ app.get('/', (_req: Request, res: Response) => {
 app.use('/api/pages', pageRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/whiteboards', whiteboardRoutes);
 
 /**
  * Example protected route.

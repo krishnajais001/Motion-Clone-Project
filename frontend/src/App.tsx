@@ -10,6 +10,7 @@ import SettingsPage from '@/pages/SettingsPage';
 import TasksPage from '@/pages/TasksPage';
 import CalendarPage from '@/pages/CalendarPage';
 import StudyPage from '@/pages/StudyPage';
+import WhiteboardPage from '@/pages/WhiteboardPage';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useUIStore } from '@/stores/useUIStore';
 
@@ -55,6 +56,7 @@ function App() {
             <Route path="tasks" element={<TasksPage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="study" element={<StudyPage />} />
+            <Route path="whiteboard" element={<WhiteboardPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 

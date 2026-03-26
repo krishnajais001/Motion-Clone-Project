@@ -18,6 +18,7 @@ interface PageTreeItemProps {
     onCreateChild: (parentId: string) => void;
     onDelete: (id: string) => void;
     onRename: (id: string, newTitle: string) => void;
+    onClick?: () => void;
 }
 
 export function PageTreeItem({
@@ -28,6 +29,7 @@ export function PageTreeItem({
     onCreateChild,
     onDelete,
     onRename,
+    onClick,
 }: PageTreeItemProps) {
     const navigate = useNavigate();
     const { id: activePageId } = useParams();
@@ -66,26 +68,32 @@ export function PageTreeItem({
         }
     };
 
+    const handleItemClick = () => {
+        if (isRenaming) return;
+        navigate(`/app/page/${node.id}`);
+        if (onClick) onClick();
+    };
+
     return (
         <div>
             {/* Page row */}
             <div
                 className={cn(
-                    'group flex h-8 cursor-pointer items-center gap-0.5 rounded-md px-2 text-sm transition-colors duration-100',
+                    'group flex h-8 cursor-pointer items-center gap-0.5 rounded-md px-2 text-sm transition-all duration-150',
                     isActive
-                        ? 'bg-black/5 dark:bg-white/10 font-medium text-black dark:text-white'
-                        : 'font-medium text-gray-500 hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white',
+                        ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'
+                        : 'font-medium text-sidebar-foreground hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black',
                     isRenaming && 'bg-black/5 dark:bg-white/10'
                 )}
                 style={{ paddingLeft: `${level * 16 + 8}px` }}
-                onClick={() => { if (!isRenaming) navigate(`/app/page/${node.id}`); }}
+                onClick={handleItemClick}
                 onMouseEnter={() => setHovered(true)}
                 onMouseLeave={() => setHovered(false)}
             >
                 {/* Expand / collapse toggle */}
                 <button
                     className={cn(
-                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-sm transition-colors hover:bg-accent hover:text-accent-foreground',
+                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-sm transition-colors hover:bg-black/10 dark:hover:bg-white/10',
                         !hasChildren && 'invisible'
                     )}
                     onClick={(e) => {
@@ -121,50 +129,50 @@ export function PageTreeItem({
                         className="min-w-0 flex-1 truncate bg-transparent outline-none text-foreground text-sm font-medium"
                     />
                 ) : (
-                    <span className="min-w-0 flex-1 truncate">{node.title}</span>
+                    <span className="min-w-0 flex-1 truncate capitalize">{node.title}</span>
                 )}
 
                 {/* Hover actions */}
-                {hovered && !isRenaming && (
-                    <div className="flex shrink-0 items-center gap-0.5">
+                {!isRenaming && (
+                    <div className={cn(
+                        "flex shrink-0 items-center gap-0.5 transition-opacity duration-150",
+                        hovered ? "opacity-100" : "opacity-0"
+                    )}>
                         {/* Rename */}
                         <button
-                            className="flex h-6 w-6 items-center justify-center rounded-sm text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                            className="flex h-6 w-6 items-center justify-center rounded-sm text-inherit transition-all hover:bg-white/20 dark:hover:bg-black/20"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setRenameValue(node.title);
                                 setIsRenaming(true);
                             }}
-                            aria-label="Rename page"
                             title="Rename"
                         >
-                            <Pencil className="h-3.5 w-3.5" />
+                            <Pencil className="h-3 w-3" />
                         </button>
 
                         {/* Delete */}
                         <button
-                            className="flex h-6 w-6 items-center justify-center rounded-sm text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                            className="flex h-6 w-6 items-center justify-center rounded-sm text-inherit transition-all hover:bg-white/20 dark:hover:bg-black/20"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onDelete(node.id);
                             }}
-                            aria-label="Delete page"
                             title="Delete"
                         >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-3 w-3" />
                         </button>
 
                         {/* Add child */}
                         <button
-                            className="flex h-6 w-6 items-center justify-center rounded-sm text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                            className="flex h-6 w-6 items-center justify-center rounded-sm text-inherit transition-all hover:bg-white/20 dark:hover:bg-black/20"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onCreateChild(node.id);
                             }}
-                            aria-label="Add child page"
                             title="Add page"
                         >
-                            <Plus className="h-3.5 w-3.5 stroke-[3px]" />
+                            <Plus className="h-3.5 w-3.5" />
                         </button>
                     </div>
                 )}
@@ -183,6 +191,7 @@ export function PageTreeItem({
                             onCreateChild={onCreateChild}
                             onDelete={onDelete}
                             onRename={onRename}
+                            onClick={onClick}
                         />
                     ))}
                 </div>

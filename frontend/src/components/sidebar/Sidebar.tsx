@@ -11,7 +11,8 @@ import {
     Moon,
     Bot,
     Calendar,
-    Timer
+    Timer,
+    PenTool
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePageStore } from '@/stores/usePageStore';
@@ -23,7 +24,7 @@ import { PageTreeItem } from './PageTreeItem';
 export function Sidebar() {
     const navigate = useNavigate();
     const { pages, addPage, removePage, updatePage } = usePageStore();
-    const { sidebarOpen, toggleSidebar, openSearch, theme, toggleTheme, toggleChat } = useUIStore();
+    const { sidebarOpen, toggleSidebar, openSearch, theme, toggleTheme, toggleChat, isMobile } = useUIStore();
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
     // Build tree from flat page list
@@ -56,15 +57,15 @@ export function Sidebar() {
         async (parentId: string | null) => {
             const newPage = await addPage(parentId);
             if (newPage) {
-                // If creating a child, expand the parent
                 if (parentId) {
                     setExpandedIds((prev) => new Set(prev).add(parentId));
                 }
-                // Navigate to the new page
                 navigate(`/app/page/${newPage.id}`);
+                // In mobile, close sidebar after creating a page
+                if (isMobile) toggleSidebar(); 
             }
         },
-        [addPage, navigate]
+        [addPage, navigate, isMobile, toggleSidebar]
     );
 
     const handleCreateChild = useCallback(
@@ -102,6 +103,11 @@ export function Sidebar() {
         navigate('/login');
     }, [navigate]);
 
+    const handleNavigation = (path: string) => {
+        navigate(path);
+        if (isMobile) toggleSidebar(); 
+    };
+
     return (
         <>
             {/* Sidebar */}
@@ -112,10 +118,10 @@ export function Sidebar() {
                 )}
             >
                 <div className="flex min-w-[240px] flex-1 flex-col min-h-0">
-                    {/* ─── Workspace Header ─── */}
+                    {/* Workspace Header */}
                     <div className="flex h-12 items-center justify-between px-3">
                         <div className="flex items-center gap-2">
-                            <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-black text-xs font-semibold text-white" style={{ backgroundColor: '#000000', color: '#ffffff' }}>
+                            <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-black text-xs font-semibold text-white">
                                 M
                             </div>
                             <span className="text-sm font-semibold text-sidebar-foreground">
@@ -123,54 +129,58 @@ export function Sidebar() {
                             </span>
                         </div>
                         <button
-                            className="flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                            className="flex h-6 w-6 items-center justify-center rounded-sm text-sidebar-foreground transition-all hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
                             onClick={toggleSidebar}
-                            aria-label="Collapse sidebar"
                         >
                             <PanelLeft className="h-4 w-4" />
                         </button>
                     </div>
 
-                    {/* ─── Quick Actions ─── */}
+                    {/* Quick Actions */}
                     <div className="space-y-0.5 px-2">
                         <button
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-sidebar-foreground transition-all hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black group"
                             onClick={openSearch}
                         >
                             <Search className="h-4 w-4" />
                             <span className="flex-1 text-left">Search</span>
-                            <kbd className="hidden rounded border border-sidebar-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-block">
+                            <kbd className="hidden rounded border border-sidebar-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-block group-hover:border-white/20 dark:group-hover:border-black/20">
                                 Ctrl K
                             </kbd>
                         </button>
                         <button
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
-                            onClick={() => navigate('/app')}
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-sidebar-foreground transition-all hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+                            onClick={() => handleNavigation('/app')}
                         >
                             <Home className="h-4 w-4" />
                             <span>Home</span>
                         </button>
                         <button
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
-                            onClick={() => navigate('/app/calendar')}
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-sidebar-foreground transition-all hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+                            onClick={() => handleNavigation('/app/calendar')}
                         >
                             <Calendar className="h-4 w-4" />
                             <span>My Planner</span>
                         </button>
                         <button
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
-                            onClick={() => navigate('/app/study')}
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-sidebar-foreground transition-all hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+                            onClick={() => handleNavigation('/app/study')}
                         >
                             <Timer className="h-4 w-4" />
                             <span>Study Mode</span>
                         </button>
-
+                        <button
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-sidebar-foreground transition-all hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+                            onClick={() => handleNavigation('/app/whiteboard')}
+                        >
+                            <PenTool className="h-4 w-4" />
+                            <span>Whiteboard</span>
+                        </button>
                     </div>
 
-                    {/* ─── Divider ─── */}
                     <div className="mx-3 my-2 border-t border-sidebar-border" />
 
-                    {/* ─── Page Tree ─── */}
+                    {/* Page Tree */}
                     <div className="flex-1 overflow-y-auto px-2">
                         <div className="mb-1 flex items-center justify-between px-2">
                             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -178,9 +188,7 @@ export function Sidebar() {
                             </span>
                             <button
                                 onClick={handleNewPage}
-                                className="flex h-5 w-5 items-center justify-center rounded-sm text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
-                                aria-label="New page"
-                                title="New page"
+                                className="flex h-5 w-5 items-center justify-center rounded-sm text-sidebar-foreground transition-all hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
                             >
                                 <Plus className="h-3.5 w-3.5" />
                             </button>
@@ -189,12 +197,6 @@ export function Sidebar() {
                         {tree.length === 0 ? (
                             <div className="px-2 py-6 text-center">
                                 <p className="text-sm text-muted-foreground">No pages yet</p>
-                                <button
-                                    className="mt-2 text-sm font-medium text-foreground underline-offset-4 hover:underline"
-                                    onClick={handleNewPage}
-                                >
-                                    Create your first page
-                                </button>
                             </div>
                         ) : (
                             tree.map((node) => (
@@ -207,42 +209,38 @@ export function Sidebar() {
                                     onCreateChild={handleCreateChild}
                                     onDelete={handleDelete}
                                     onRename={handleRename}
+                                    // Close sidebar on click in mobile
+                                    onClick={() => isMobile && toggleSidebar()} 
                                 />
                             ))
                         )}
                     </div>
 
-                    {/* ─── Bottom Actions ─── */}
+                    {/* Bottom Actions */}
                     <div className="space-y-0.5 border-t border-sidebar-border px-2 py-2">
                         <button
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
-                            onClick={() => navigate('/app/settings')}
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-sidebar-foreground transition-all hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+                            onClick={() => handleNavigation('/app/settings')}
                         >
                             <Settings className="h-4 w-4" />
                             <span>Settings</span>
                         </button>
                         <button
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-sidebar-foreground transition-all hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
                             onClick={toggleChat}
                         >
                             <Bot className="h-4 w-4" />
                             <span>Notion AI</span>
                         </button>
                         <button
-                            id="theme-toggle"
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-sidebar-foreground transition-all hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
                             onClick={toggleTheme}
-                            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                         >
-                            {theme === 'dark' ? (
-                                <Sun className="h-4 w-4" />
-                            ) : (
-                                <Moon className="h-4 w-4" />
-                            )}
+                            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                             <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
                         </button>
                         <button
-                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-gray-500 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                            className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm font-medium text-sidebar-foreground transition-all hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
                             onClick={handleLogout}
                         >
                             <LogOut className="h-4 w-4" />
@@ -252,12 +250,11 @@ export function Sidebar() {
                 </div>
             </aside>
 
-            {/* Collapsed sidebar toggle */}
-            {!sidebarOpen && (
+            {/* Expander Toggle for Desktop only (Mobile handled in AppPage) */}
+            {!sidebarOpen && !isMobile && (
                 <button
-                    className="fixed left-2 top-3 z-50 flex h-7 w-7 items-center justify-center rounded-sm bg-white dark:bg-sidebar text-gray-500 border border-gray-200 dark:border-white/10 transition-colors hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white"
+                    className="fixed left-2 top-3 z-50 flex h-7 w-7 items-center justify-center rounded-sm bg-black dark:bg-white text-white dark:text-black transition-all hover:scale-110 active:scale-95 shadow-lg"
                     onClick={toggleSidebar}
-                    aria-label="Expand sidebar"
                 >
                     <PanelLeft className="h-4 w-4" />
                 </button>

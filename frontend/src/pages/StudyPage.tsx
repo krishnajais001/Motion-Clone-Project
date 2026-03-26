@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Play, Square, RotateCcw, BookOpen, Clock, Target, Plus, Zap, TrendingUp, TrendingDown, Flame } from 'lucide-react';
+import { Play, Square, RotateCcw, BookOpen, Clock, Target, Plus, Zap, TrendingUp, TrendingDown, Flame, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // --- Types ---
@@ -422,14 +422,23 @@ export default function StudyPage() {
                       </div>
                       <div>
                         <div className="font-black text-[11px] uppercase tracking-tight">{subject.name}</div>
-                        <div className="flex items-center gap-2">
-                           <div className="text-[8px] opacity-70 font-black uppercase tracking-widest mt-0.5">Tactical Objective</div>
-                           <span onClick={(e) => handleDeleteSubject(subject.id, e)} className="text-[8px] text-gray-400 hover:underline font-black uppercase cursor-pointer transition-colors opacity-0 group-hover:opacity-100">Purge Pillar</span>
-                        </div>
                       </div>
                     </div>
-                    <div className="font-black tabular-nums text-xs">
-                      {formatTime(subject.timeSpent + (activeSubjectId === subject.id && isRunning ? timerSeconds : 0))}
+                    <div className="flex items-center gap-4">
+                      <div className="font-black tabular-nums text-xs">
+                        {formatTime(subject.timeSpent + (activeSubjectId === subject.id && isRunning ? timerSeconds : 0))}
+                      </div>
+                      <span 
+                        onClick={(e) => handleDeleteSubject(subject.id, e)}
+                        className={cn(
+                          "p-2 border transition-all opacity-0 group-hover:opacity-100",
+                          activeSubjectId === subject.id
+                            ? "border-white/20 hover:bg-white hover:text-black"
+                            : "border-black/10 hover:bg-black hover:text-white dark:border-white/10 dark:hover:bg-white dark:hover:text-black"
+                        )}
+                      >
+                        <Trash2 size={12} />
+                      </span>
                     </div>
                   </button>
                 ))}

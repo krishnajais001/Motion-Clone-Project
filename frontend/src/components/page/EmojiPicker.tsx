@@ -30,22 +30,22 @@ export function EmojiPicker({ children, onEmojiSelect, onRemove, hasIcon }: Emoj
                 align="start"
                 side="bottom"
             >
-                <div className="bg-white rounded-lg shadow-md border overflow-hidden">
+                <div className="bg-popover rounded-lg shadow-xl border border-border overflow-hidden">
                     <Picker
                         data={data}
                         onEmojiSelect={handleSelect}
-                        theme="light"
+                        theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
                         navPosition="bottom"
                         previewPosition="none"
                     />
                     {hasIcon && onRemove && (
-                        <div className="p-2 pt-0 w-full bg-white">
+                        <div className="p-2 pt-0 w-full">
                             <button
                                 onClick={() => {
                                     onRemove();
                                     setOpen(false);
                                 }}
-                                className="w-full flex items-center justify-center rounded-md px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 font-medium"
+                                className="w-full flex items-center justify-center rounded-md px-3 py-2 text-sm text-red-600 transition-all hover:bg-red-600 hover:text-white font-black uppercase tracking-wider"
                             >
                                 Remove icon
                             </button>

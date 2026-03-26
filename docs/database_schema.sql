@@ -86,21 +86,65 @@ DO $$ BEGIN
     CREATE POLICY "Users can delete own events" ON events FOR DELETE USING (owner_id = auth.uid());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- 8. TRIGGERS (Auto-update updated_at)
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
+-- 9. STUDY SUBJECTS (Focus Pillars)
+CREATE TABLE IF NOT EXISTS study_subjects (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name          TEXT NOT NULL,
+    time_spent    INTEGER DEFAULT 0, -- Total seconds for the current day
+    last_reset_at TIMESTAMPTZ DEFAULT now(),
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-CREATE OR REPLACE TRIGGER update_tasks_updated_at
-BEFORE UPDATE ON tasks
-FOR EACH ROW
-EXECUTE PROCEDURE update_updated_at_column();
+-- 10. STUDY SESSIONS (Ledger)
+CREATE TABLE IF NOT EXISTS study_sessions (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    subject_id    UUID REFERENCES study_subjects(id) ON DELETE SET NULL,
+    subject_name  TEXT NOT NULL,
+    duration      INTEGER NOT NULL, -- Duration in seconds
+    timestamp     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-CREATE OR REPLACE TRIGGER update_events_updated_at
-BEFORE UPDATE ON events
+-- 11. INDEXES (Study)
+CREATE INDEX IF NOT EXISTS study_subjects_owner_id_idx ON study_subjects(owner_id);
+CREATE INDEX IF NOT EXISTS study_sessions_owner_id_idx ON study_sessions(owner_id);
+CREATE INDEX IF NOT EXISTS study_sessions_timestamp_idx ON study_sessions(timestamp);
+
+-- 12. ENABLE RLS (Study)
+ALTER TABLE study_subjects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE study_sessions ENABLE ROW LEVEL SECURITY;
+
+-- 13. POLICIES (Study Subjects)
+DO $$ BEGIN
+    CREATE POLICY "Users can read own study_subjects" ON study_subjects FOR SELECT USING (owner_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE POLICY "Users can insert own study_subjects" ON study_subjects FOR INSERT WITH CHECK (owner_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE POLICY "Users can update own study_subjects" ON study_subjects FOR UPDATE USING (owner_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE POLICY "Users can delete own study_subjects" ON study_subjects FOR DELETE USING (owner_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 14. POLICIES (Study Sessions)
+DO $$ BEGIN
+    CREATE POLICY "Users can read own study_sessions" ON study_sessions FOR SELECT USING (owner_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE POLICY "Users can insert own study_sessions" ON study_sessions FOR INSERT WITH CHECK (owner_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 15. TRIGGERS (Study Subjects)
+CREATE OR REPLACE TRIGGER update_study_subjects_updated_at
+BEFORE UPDATE ON study_subjects
 FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();

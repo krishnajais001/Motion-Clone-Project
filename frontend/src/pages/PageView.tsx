@@ -83,7 +83,7 @@ export default function PageView() {
             ) : null}
 
             {/* ─── Page Content Area (centered like Notion) ─── */}
-            <div className="mx-auto w-full max-w-[720px] px-24 pb-20">
+            <div className="mx-auto w-full max-w-[1000px] px-6 md:px-24 pb-20">
                 {/* Controls that appear on hover */}
                 <div className="group/controls mt-16 flex items-center gap-2 opacity-0 transition-opacity hover:opacity-100 focus-within:opacity-100">
                     {!activePage.emoji_icon && (
