@@ -2,12 +2,15 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { ImagePlus, SmilePlus } from 'lucide-react';
 import { usePageStore } from '@/stores/usePageStore';
+import { usePages } from '@/hooks/usePages';
 import { Editor } from '@/components/editor/Editor';
 import { EmojiPicker } from '@/components/page/EmojiPicker';
+import ProjectFooter from '@/components/ProjectFooter';
 
 export default function PageView() {
     const { id } = useParams<{ id: string }>();
-    const { pages, setActivePageId, updatePage } = usePageStore();
+    const { pages, updatePage } = usePages();
+    const { setActivePageId } = usePageStore();
     const activePage = pages.find((p) => p.id === id) || null;
     const titleRef = useRef<HTMLDivElement>(null);
 
@@ -29,7 +32,7 @@ export default function PageView() {
     const handleTitleInput = useCallback(() => {
         if (!titleRef.current || !activePage) return;
         const newTitle = titleRef.current.textContent?.trim() || 'Untitled';
-        updatePage(activePage.id, { title: newTitle });
+        updatePage({ id: activePage.id, patch: { title: newTitle } });
     }, [activePage, updatePage]);
 
     const handleTitleKeyDown = useCallback(
@@ -47,7 +50,7 @@ export default function PageView() {
     const handleEditorUpdate = useCallback(
         (content: Record<string, unknown>) => {
             if (!activePage) return;
-            updatePage(activePage.id, { content });
+            updatePage({ id: activePage.id, patch: { content } });
         },
         [activePage, updatePage]
     );
@@ -88,7 +91,7 @@ export default function PageView() {
                 <div className="group/controls mt-16 flex items-center gap-2 opacity-0 transition-opacity hover:opacity-100 focus-within:opacity-100">
                     {!activePage.emoji_icon && (
                         <EmojiPicker
-                            onEmojiSelect={(emoji) => updatePage(activePage.id, { emoji_icon: emoji })}
+                            onEmojiSelect={(emoji) => updatePage({ id: activePage.id, patch: { emoji_icon: emoji } })}
                             hasIcon={false}
                         >
                             <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground">
@@ -109,8 +112,8 @@ export default function PageView() {
                 {activePage.emoji_icon && (
                     <div className="-ml-1 mt-4 mb-2">
                         <EmojiPicker
-                            onEmojiSelect={(emoji) => updatePage(activePage.id, { emoji_icon: emoji })}
-                            onRemove={() => updatePage(activePage.id, { emoji_icon: null })}
+                            onEmojiSelect={(emoji) => updatePage({ id: activePage.id, patch: { emoji_icon: emoji } })}
+                            onRemove={() => updatePage({ id: activePage.id, patch: { emoji_icon: null } })}
                             hasIcon={true}
                         >
                             <button
@@ -143,6 +146,7 @@ export default function PageView() {
                     onUpdate={handleEditorUpdate}
                 />
             </div>
+            <ProjectFooter />
         </div>
     );
 }

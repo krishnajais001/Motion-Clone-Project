@@ -1,7 +1,18 @@
--- 1. PAGES TABLE (Existing)
+-- 1. PROJECTS TABLE (New)
+CREATE TABLE IF NOT EXISTS projects (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name          TEXT NOT NULL DEFAULT 'General',
+    emoji_icon    TEXT DEFAULT '📁',
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 2. PAGES TABLE (Existing)
 CREATE TABLE IF NOT EXISTS pages (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    project_id    UUID REFERENCES projects(id) ON DELETE SET NULL, -- Link to a Project
     parent_id     UUID REFERENCES pages(id) ON DELETE CASCADE,
     title         TEXT NOT NULL DEFAULT 'Untitled',
     emoji_icon    TEXT,
@@ -11,7 +22,18 @@ CREATE TABLE IF NOT EXISTS pages (
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 2. TASKS TABLE (Enhanced)
+-- 3. ENABLE RLS (Projects)
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    CREATE POLICY "Users can read own projects" ON projects FOR SELECT USING (owner_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE POLICY "Users can insert own projects" ON projects FOR INSERT WITH CHECK (owner_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- 4. TASKS TABLE (Enhanced)
 CREATE TABLE IF NOT EXISTS tasks (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,

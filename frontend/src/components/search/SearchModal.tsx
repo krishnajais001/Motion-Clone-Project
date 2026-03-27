@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Search, FileText } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { cn } from '@/lib/utils';
-import { usePageStore } from '@/stores/usePageStore';
 import { useUIStore } from '@/stores/useUIStore';
+import { usePages } from '@/hooks/usePages';
 import { getBreadcrumbPath } from '@/lib/treeUtils';
 
 export function SearchModal() {
     const navigate = useNavigate();
-    const { pages } = usePageStore();
+    const { pages } = usePages();
     const { searchOpen, closeSearch } = useUIStore();
     const inputRef = useRef<HTMLInputElement>(null);
     const [query, setQuery] = useState('');
@@ -123,6 +123,7 @@ export function SearchModal() {
                                 pages.map((p) => ({
                                     id: p.id,
                                     parent_id: p.parent_id,
+                                    project_id: p.project_id,
                                     title: p.title,
                                     emoji_icon: p.emoji_icon,
                                 })),

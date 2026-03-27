@@ -1,56 +1,19 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Play, Square, RotateCcw, BookOpen, Clock, Target, Plus, Zap, TrendingUp, TrendingDown, Flame, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-// --- Types ---
-interface StudySession {
-  id: string;
-  subjectName: string;
-  duration: number;
-  timestamp: string;
-}
-
-interface SubjectStudy {
-  id: string;
-  name: string;
-  timeSpent: number; // For the current day
-}
+import ProjectFooter from '@/components/ProjectFooter';
+import { useStudy } from '@/hooks/useStudy';
 
 export default function StudyPage() {
-  const [subjects, setSubjects] = useState<SubjectStudy[]>(() => {
-    const saved = localStorage.getItem('motion_study_data');
-    return saved ? JSON.parse(saved) : [
-      { id: '1', name: 'Mathematics', timeSpent: 3600 + 45 * 60 },
-      { id: '2', name: 'Computer Science', timeSpent: 2 * 3600 + 15 * 60 },
-      { id: '3', name: 'Physics', timeSpent: 0 },
-      { id: '4', name: 'Deep Work', timeSpent: 0 },
-    ];
-  });
-
-  const [history, setHistory] = useState<StudySession[]>(() => {
-    const saved = localStorage.getItem('motion_study_history');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('motion_study_data', JSON.stringify(subjects));
-  }, [subjects]);
-
-  useEffect(() => {
-    localStorage.setItem('motion_study_history', JSON.stringify(history));
-  }, [history]);
-
-  // --- Daily Reset Check ---
-  useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const lastReset = localStorage.getItem('motion_study_last_reset');
-    
-    if (lastReset && lastReset !== today) {
-      // It's a new day, reset all subject session timers
-      setSubjects(prev => prev.map(s => ({ ...s, timeSpent: 0 })));
-    }
-    localStorage.setItem('motion_study_last_reset', today);
-  }, []);
+  const { 
+    subjects, 
+    sessions, 
+    isLoading, 
+    addSubject, 
+    incrementTime, 
+    deleteSubject, 
+    logSession 
+  } = useStudy();
 
   const [activeSubjectId, setActiveSubjectId] = useState<string | null>(null);
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -58,20 +21,22 @@ export default function StudyPage() {
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef<any>(null);
 
+  const activeSubject = subjects?.find(s => s.id === activeSubjectId);
+
   const elapsedThisSession = isRunning 
     ? (targetSeconds > 0 ? Math.max(0, targetSeconds - timerSeconds) : timerSeconds)
     : 0;
-  const totalStudyTime = subjects.reduce((acc, s) => acc + s.timeSpent, 0) + elapsedThisSession;
+  
+  const accumulatedFocusTime = (subjects?.reduce((acc, s) => acc + s.time_spent_today, 0) || 0) + elapsedThisSession;
 
   // --- Stats Calculation ---
   const { maxStudy, minStudy, currentStreak, maxStreak } = useMemo(() => {
     const dailyTotals: Record<string, number> = {};
     
-    // Include current day's progress in calculations
     const todayStr = new Date().toISOString().split('T')[0];
-    dailyTotals[todayStr] = totalStudyTime;
+    dailyTotals[todayStr] = accumulatedFocusTime;
 
-    history.forEach(session => {
+    sessions?.forEach(session => {
       const date = session.timestamp.split('T')[0];
       dailyTotals[date] = (dailyTotals[date] || 0) + session.duration;
     });
@@ -87,10 +52,8 @@ export default function StudyPage() {
     let maxStreak = 0;
     let tempStreak = 0;
     
-    // To calculate max streak, we need all dates in order
     const allDates = Object.keys(dailyTotals).sort();
     
-    // Calculate Max Streak across all history
     if (allDates.length > 0) {
       let prevDate = new Date(allDates[0]);
       
@@ -98,7 +61,6 @@ export default function StudyPage() {
         const dayTotal = dailyTotals[dateKey] || 0;
         const currentDate = new Date(dateKey);
         
-        // Check if dates are consecutive
         const diffTime = Math.abs(currentDate.getTime() - prevDate.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
@@ -116,7 +78,6 @@ export default function StudyPage() {
       });
     }
 
-    // Current Streak (must touch today or yesterday)
     let checkDate = new Date();
     while (true) {
       const dateKey = checkDate.toISOString().split('T')[0];
@@ -135,21 +96,20 @@ export default function StudyPage() {
     }
 
     return { maxStudy: max, minStudy: min, currentStreak, maxStreak };
-  }, [history, subjects, totalStudyTime]);
+  }, [sessions, subjects, accumulatedFocusTime]);
 
-  const logSession = (duration: number) => {
-    if (!activeSubjectId) return;
-    const subject = subjects.find(s => s.id === activeSubjectId);
-    if (!subject) return;
+  const dailyRegistry = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const threeDaysAgo = new Date(today);
+    threeDaysAgo.setDate(today.getDate() - 2); 
 
-    const newSession: StudySession = {
-      id: Math.random().toString(36).substr(2, 9),
-      subjectName: subject.name,
-      duration,
-      timestamp: new Date().toISOString()
-    };
-    setHistory(prev => [newSession, ...prev]);
-  };
+    return sessions?.filter(session => {
+      const sessionDate = new Date(session.timestamp);
+      sessionDate.setHours(0, 0, 0, 0);
+      return sessionDate >= threeDaysAgo;
+    }) || [];
+  }, [sessions]);
 
   // Timer Logic
   useEffect(() => {
@@ -158,13 +118,9 @@ export default function StudyPage() {
         setTimerSeconds(prev => {
           if (targetSeconds > 0 && prev <= 1) {
             setIsRunning(false);
-            if (activeSubjectId) {
-              setSubjects(curr => curr.map(s => 
-                s.id === activeSubjectId 
-                  ? { ...s, timeSpent: s.timeSpent + targetSeconds } 
-                  : s
-              ));
-              logSession(targetSeconds);
+            if (activeSubjectId && activeSubject) {
+              incrementTime({ id: activeSubjectId, duration: targetSeconds });
+              logSession({ subjectName: activeSubject.name, duration: targetSeconds });
             }
             alert('Study session complete!');
             setTargetSeconds(0);
@@ -180,7 +136,7 @@ export default function StudyPage() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRunning, targetSeconds, activeSubjectId]);
+  }, [isRunning, targetSeconds, activeSubjectId, activeSubject, incrementTime, logSession]);
 
   const handleStart = () => {
     if (!activeSubjectId) {
@@ -190,17 +146,13 @@ export default function StudyPage() {
     setIsRunning(true);
   };
 
-  const handleStop = () => {
+  const handleStop = async () => {
     setIsRunning(false);
-    if (activeSubjectId) {
+    if (activeSubjectId && activeSubject) {
       const elapsed = (targetSeconds > 0 ? (targetSeconds - timerSeconds) : timerSeconds);
       if (elapsed > 0) {
-        setSubjects(prev => prev.map(s => 
-          s.id === activeSubjectId 
-            ? { ...s, timeSpent: s.timeSpent + elapsed } 
-            : s
-        ));
-        logSession(elapsed);
+        await incrementTime({ id: activeSubjectId, duration: elapsed });
+        await logSession({ subjectName: activeSubject.name, duration: elapsed });
       }
     }
     setTimerSeconds(0);
@@ -228,27 +180,33 @@ export default function StudyPage() {
   const [isAddingSubject, setIsAddingSubject] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState('');
 
-  const handleAddSubject = (e: any) => {
+  const handleAddSubject = async (e: any) => {
     e.preventDefault();
     if (newSubjectName.trim()) {
-      const newSubject: SubjectStudy = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: newSubjectName.trim(),
-        timeSpent: 0
-      };
-      setSubjects(prev => [...prev, newSubject]);
+      await addSubject(newSubjectName.trim());
       setNewSubjectName('');
       setIsAddingSubject(false);
     }
   };
 
-  const handleDeleteSubject = (id: string, e: any) => {
+  const handleDeleteSubject = async (id: string, e: any) => {
     e.stopPropagation();
     if (window.confirm('Remove this subject?')) {
-      setSubjects(prev => prev.filter(s => s.id !== id));
+      await deleteSubject(id);
       if (activeSubjectId === id) setActiveSubjectId(null);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-white dark:bg-black font-sans">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-black dark:border-white border-t-transparent dark:border-t-transparent animate-spin" />
+          <div className="text-[10px] font-black uppercase tracking-[0.4em] opacity-30">Synchronizing Vault...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full bg-white dark:bg-background text-black dark:text-white transition-colors duration-300 overflow-y-auto font-sans">
@@ -260,9 +218,10 @@ export default function StudyPage() {
             <h1 className="text-xl font-black tracking-tighter mb-1 uppercase">Study Mode</h1>
             <p className="text-gray-500 dark:text-gray-400 text-[9px] font-black uppercase tracking-[0.2em] opacity-80">Focus is the key to success.</p>
           </div>
-          <div className="text-right">
-             <div className="text-sm font-black uppercase tracking-[0.2em] text-black dark:text-white">
-                {new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+          <div className="text-right flex flex-col items-end gap-1">
+             <div className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30">Universal Time</div>
+             <div className="text-sm font-black uppercase tracking-[0.2em] text-black dark:text-white tabular-nums">
+                {new Date().toISOString().split('T')[0].split('-').join(' / ')}
              </div>
           </div>
         </div>
@@ -277,7 +236,7 @@ export default function StudyPage() {
                   "w-2.5 h-2.5 rounded-full transition-all duration-300",
                   isRunning ? "bg-black dark:bg-white animate-pulse" : "bg-transparent border border-gray-300 dark:border-white/20"
                 )} />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-black dark:text-white leading-none">
+                <span className="text-[9px] font-black uppercase tracking-widest text-black dark:text-white leading-none">
                   {isRunning ? (targetSeconds > 0 ? "Countdown Active" : "Session Active") : "Standby"}
                 </span>
               </div>
@@ -363,7 +322,7 @@ export default function StudyPage() {
                 </div>
               </div>
               <div className="text-2xl font-black tracking-tighter tabular-nums text-black dark:text-white">
-                 {formatTime(totalStudyTime)}
+                 {formatTime(accumulatedFocusTime)}
               </div>
             </div>
 
@@ -402,7 +361,7 @@ export default function StudyPage() {
               )}
 
               <div className="space-y-2">
-                {subjects.map((subject) => (
+                {subjects?.map((subject) => (
                   <button
                     key={subject.id}
                     onClick={() => setActiveSubjectId(subject.id)}
@@ -426,7 +385,7 @@ export default function StudyPage() {
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="font-black tabular-nums text-xs">
-                        {formatTime(subject.timeSpent + (activeSubjectId === subject.id && isRunning ? timerSeconds : 0))}
+                        {formatTime(subject.time_spent_today + (activeSubjectId === subject.id && isRunning ? (targetSeconds > 0 ? (targetSeconds - timerSeconds) : timerSeconds) : 0))}
                       </div>
                       <span 
                         onClick={(e) => handleDeleteSubject(subject.id, e)}
@@ -476,7 +435,7 @@ export default function StudyPage() {
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                         <Zap size={14} fill="currentColor" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.25em]">Momentum</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary/40">Momentum</span>
                     </div>
                     <div className="text-[8px] font-black uppercase tracking-widest opacity-40">Best: {maxStreak}</div>
                 </div>
@@ -494,37 +453,48 @@ export default function StudyPage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {history.length === 0 ? (
+            {!dailyRegistry || dailyRegistry.length === 0 ? (
               <div className="col-span-2 py-16 text-center border-2 border-dashed border-gray-100 dark:border-white/5">
-                <p className="text-gray-400 text-[10px] uppercase font-black tracking-[0.3em]">Vault Empty. Log session to begin.</p>
+                <p className="text-gray-400 text-[10px] uppercase font-black tracking-[0.3em]">Vault Empty for the last 3 days.</p>
               </div>
             ) : (
-              history.slice(0, 10).map((session) => (
-                <div 
-                  key={session.id} 
-                  className="flex items-center justify-between p-6 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all group"
-                >
-                  <div className="flex items-center gap-5">
-                    <div className="w-10 h-10 border border-black dark:border-white flex items-center justify-center transition-colors group-hover:border-white dark:group-hover:border-black">
-                      <BookOpen size={16} />
-                    </div>
-                    <div>
-                      <div className="text-[11px] font-black uppercase tracking-tight">{session.subjectName}</div>
-                      <div className="text-[9px] opacity-60 font-medium uppercase tracking-[0.1em] mt-1">
-                        {new Date(session.timestamp).toLocaleDateString()} — {new Date(session.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              dailyRegistry.map((session) => {
+                const sessionDate = new Date(session.timestamp).toLocaleDateString();
+                const todayStr = new Date().toLocaleDateString();
+                const yesterdayStr = new Date(Date.now() - 86400000).toLocaleDateString();
+                
+                let dateLabel = sessionDate;
+                if (sessionDate === todayStr) dateLabel = 'Today';
+                else if (sessionDate === yesterdayStr) dateLabel = 'Yesterday';
+
+                return (
+                  <div 
+                    key={session.id} 
+                    className="flex items-center justify-between p-6 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all group"
+                  >
+                    <div className="flex items-center gap-5">
+                      <div className="w-10 h-10 border border-black dark:border-white flex items-center justify-center transition-colors group-hover:border-white dark:group-hover:border-black">
+                        <BookOpen size={16} />
+                      </div>
+                      <div>
+                        <div className="text-[11px] font-black uppercase tracking-tight">{session.subject_name}</div>
+                        <div className="text-[9px] opacity-60 font-medium uppercase tracking-widest mt-1">
+                          {dateLabel} — {new Date(session.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       </div>
                     </div>
+                    <div className="text-sm font-black tabular-nums">
+                      +{formatTime(session.duration)}
+                    </div>
                   </div>
-                  <div className="text-sm font-black tabular-nums">
-                    +{formatTime(session.duration)}
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
 
       </div>
+      <ProjectFooter />
     </div>
   );
 }

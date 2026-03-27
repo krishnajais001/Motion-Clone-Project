@@ -1,4 +1,5 @@
 import { TaskBoard } from '@/features/tasks/TaskBoard';
+import ProjectFooter from '@/components/ProjectFooter';
 
 export default function TasksPage() {
     return (
@@ -10,6 +11,7 @@ export default function TasksPage() {
             <div className="flex-1 overflow-auto">
                 <TaskBoard />
             </div>
+            <ProjectFooter />
         </div>
     );
 }

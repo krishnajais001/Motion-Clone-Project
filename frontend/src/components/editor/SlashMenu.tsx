@@ -25,7 +25,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { SlashMenuState } from './SlashMenuExtension';
 import { usePageStore } from '@/stores/usePageStore';
-
+import { usePages } from '@/hooks/usePages';
 
 // ─── Menu item definition ───────────────────────────────────────────────────
 
@@ -270,7 +270,8 @@ export function SlashMenu({ editor, menuState, onClose }: SlashMenuProps) {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [position, setPosition] = useState({ top: 0, left: 0 });
     const menuRef = useRef<HTMLDivElement>(null);
-    const { activePageId, addPage } = usePageStore();
+    const { addPage } = usePages();
+    const { activePageId } = usePageStore();
 
     const items = menuState ? filterItems(MENU_ITEMS, menuState.query) : [];
 
@@ -334,8 +335,12 @@ export function SlashMenu({ editor, menuState, onClose }: SlashMenuProps) {
     }, [menuState?.active, onClose]);
 
     const createChildPage = useCallback(
-        async (_title: string): Promise<string | undefined> => {
-            const newPage = await addPage(activePageId);
+        async (title: string): Promise<string | undefined> => {
+            const newPage = await addPage({
+                title,
+                parent_id: activePageId,
+                project_id: null
+            });
             return newPage?.id;
         },
         [activePageId, addPage]

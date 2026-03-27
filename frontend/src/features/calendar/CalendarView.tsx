@@ -1,15 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, CheckCircle2, Circle, Pencil, X } from 'lucide-react';
-import { EventService } from '../../lib/services/event.service';
-import { TaskService } from '../../lib/services/task.service';
-import type { Event } from '../../lib/services/event.service';
-import type { Task } from '../../lib/services/task.service';
+import React, { useState, useMemo } from 'react';
+import { Plus, CheckCircle2, Circle, Pencil, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useEvents } from '@/hooks/useEvents';
+import { useTasks } from '@/hooks/useTasks';
 
-export const CalendarView: React.FC = () => {
-    const [events, setEvents] = useState<Event[]>([]);
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [currentDate, setCurrentDate] = useState(new Date());
+export const CalendarView: React.FC<{ currentDate: Date }> = ({ currentDate }) => {
     const [selectedDate, setSelectedDate] = useState(new Date());
 
     // Inline form state
@@ -20,32 +15,27 @@ export const CalendarView: React.FC = () => {
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
     const [editTaskTitle, setEditTaskTitle] = useState('');
 
-    const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    const startDate = useMemo(() => new Date(currentDate.getFullYear(), currentDate.getMonth(), 1), [currentDate]);
+    const endDate = useMemo(() => new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0), [currentDate]);
 
-    useEffect(() => {
-        const fetchEventsAndTasks = async () => {
-            try {
-                const [eventsData, tasksData] = await Promise.all([
-                    EventService.getAll({ 
-                        start: startDate.toISOString(), 
-                        end: endDate.toISOString() 
-                    }),
-                    TaskService.getAll() 
-                ]);
-                setEvents(eventsData);
-                setTasks(tasksData);
-            } catch (err) {
-                console.error('Failed to fetch data:', err);
-            }
-        };
-        fetchEventsAndTasks();
-    }, [currentDate]);
+    // TanStack Query Hooks
+    const { 
+        events, 
+        isLoading: eventsLoading 
+    } = useEvents({ 
+        start: startDate.toISOString(), 
+        end: endDate.toISOString() 
+    });
+    
+    const { 
+        tasks, 
+        isLoading: tasksLoading,
+        createTask,
+        updateTask,
+        deleteTask
+    } = useTasks();
 
     const firstDayOfMonth = startDate.getDay();
-
-    const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-    const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
 
     const handleDayClick = (date: Date) => {
         setSelectedDate(date);
@@ -70,14 +60,13 @@ export const CalendarView: React.FC = () => {
 
         try {
             const _tempDate = new Date(selectedDate.getTime() - (selectedDate.getTimezoneOffset() * 60000));
-            const newTask = await TaskService.create({ 
+            await createTask({ 
                 title: taskInput, 
                 status: 'todo',
                 priority: 'medium',
                 due_date: _tempDate.toISOString().split('T')[0],
                 order_index: 0
             });
-            setTasks([...tasks, newTask]);
             setTaskInput('');
             setShowTaskInput(false);
         } catch (err) {
@@ -85,137 +74,111 @@ export const CalendarView: React.FC = () => {
         }
     };
 
-    const toggleTaskStatus = async (task: Task) => {
+    const toggleTaskStatus = async (task: any) => {
         const newStatus = task.status === 'done' ? 'todo' : 'done';
-        
-        // Optimistic UI Update for instant feedback
-        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
-        
         try {
-            await TaskService.update(task.id, { status: newStatus });
+            await updateTask({ 
+                id: task.id, 
+                patch: { status: newStatus } 
+            });
         } catch (err) {
             console.error('Failed to update task:', err);
-            // Revert on failure
-            setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: task.status } : t));
         }
     };
 
-    const handleDeleteTask = async (task: Task) => {
-        // Optimistic UI delete
-        const originalTasks = [...tasks];
-        setTasks(prev => prev.filter(t => t.id !== task.id));
+    const handleDeleteTask = async (task: any) => {
         try {
-            await TaskService.delete(task.id);
+            await deleteTask(task.id);
         } catch (err) {
             console.error('Failed to delete task:', err);
-            setTasks(originalTasks);
         }
     };
 
-    const startEditing = (task: Task) => {
+    const startEditing = (task: any) => {
         setEditingTaskId(task.id);
         setEditTaskTitle(task.title);
     };
 
     const saveEditTask = async () => {
         if (editingTaskId && editTaskTitle.trim()) {
-            const task = tasks.find(t => t.id === editingTaskId);
-            if (!task) return;
-            const originalTitle = task.title;
-            // Optimistic Update
-            setTasks(prev => prev.map(t => t.id === editingTaskId ? { ...t, title: editTaskTitle.trim() } : t));
-            setEditingTaskId(null);
             try {
-                await TaskService.update(editingTaskId, { title: editTaskTitle.trim() });
+                await updateTask({ 
+                    id: editingTaskId, 
+                    patch: { title: editTaskTitle.trim() } 
+                });
+                setEditingTaskId(null);
             } catch (err) {
                 console.error('Failed to rename task:', err);
-                setTasks(prev => prev.map(t => t.id === editingTaskId ? { ...t, title: originalTitle } : t));
             }
         } else {
              setEditingTaskId(null);
         }
     };
 
-    const selectedDateTasks = tasks.filter(t => {
+    const selectedDateTasks = tasks.filter((t: any) => {
         if (!t.due_date) return false;
         const taskDate = new Date(t.due_date);
         return taskDate.getDate() === selectedDate.getDate() && taskDate.getMonth() === selectedDate.getMonth() && taskDate.getFullYear() === selectedDate.getFullYear();
     });
 
-
     return (
-        <div className="flex w-full h-full bg-white dark:bg-transparent border border-black dark:border-white/10 overflow-hidden relative font-sans transition-colors duration-300">
+        <div className="flex flex-col lg:flex-row w-full bg-white dark:bg-transparent border border-black dark:border-white/10 overflow-hidden relative font-sans transition-colors duration-300 custom-scrollbar">
             {/* Calendar Main Portion */}
-            <div className="flex-1 flex flex-col h-full border-r border-black dark:border-white/10">
-                <header className="flex items-center justify-between px-8 py-6 border-b border-black dark:border-white/10 bg-white dark:bg-transparent">
-                    <div className="flex items-center gap-4">
-                        <div className="p-2 flex items-center justify-center bg-black dark:bg-white text-white dark:text-black rounded-md">
-                            <CalendarIcon size={24} className="stroke-white dark:stroke-black" />
-                        </div>
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-3">
-                                <h2 className="text-2xl font-black text-black dark:text-white uppercase tracking-tight">
-                                    {currentDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-                                </h2>
-                                <div className="flex items-center bg-gray-50 dark:bg-white/5 rounded border border-gray-200 dark:border-white/5 p-0.5">
-                                    <button onClick={prevMonth} className="p-0.5 hover:bg-white dark:hover:bg-white/10 rounded-[4px] text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white transition-colors hover:shadow-sm">
-                                        <ChevronLeft size={16} className="stroke-[3px]" />
-                                    </button>
-                                    <button onClick={nextMonth} className="p-0.5 hover:bg-white dark:hover:bg-white/10 rounded-[4px] text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white transition-colors hover:shadow-sm">
-                                        <ChevronRight size={16} className="stroke-[3px]" />
-                                    </button>
-                                </div>
-                            </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 font-bold tracking-widest uppercase mt-0.5">Your Schedule</p>
-                        </div>
+            <div className="flex-1 flex flex-col h-full border-b lg:border-b-0 lg:border-r border-black dark:border-white/10 min-h-[550px] lg:min-h-0 shrink-0 lg:shrink">
+                
+                {(eventsLoading || tasksLoading) ? (
+                    <div className="flex-1 flex items-center justify-center">
+                        <div className="h-6 w-6 animate-spin rounded-none border-2 border-black border-t-white dark:border-white dark:border-t-black" />
                     </div>
-                </header>
+                ) : (
+                    <>
+                        <div className="grid grid-cols-7 border-b border-black dark:border-white/10 bg-gray-50/50 dark:bg-transparent">
+                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                                <div key={day} className="py-3 text-center text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest border-r border-black/10 dark:border-white/5 last:border-r-0">{day}</div>
+                            ))}
+                        </div>
 
-                <div className="grid grid-cols-7 border-b border-black dark:border-white/10 bg-gray-50/50 dark:bg-transparent">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                        <div key={day} className="py-3 text-center text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest border-r border-black/10 dark:border-white/5 last:border-r-0">{day}</div>
-                    ))}
-                </div>
-
-                <div className="flex-1 grid grid-cols-7 grid-rows-6 auto-rows-fr bg-gray-50/20 dark:bg-transparent">
-                    {days.map((day, idx) => {
-                        const dayEvents = events.filter(e => new Date(e.start_time).toLocaleDateString() === day.date.toLocaleDateString());
-                        const dayTasks = tasks.filter(t => t.due_date && new Date(t.due_date).toLocaleDateString() === day.date.toLocaleDateString());
-                        
-                        return (
-                            <div 
-                                key={idx} 
-                                onClick={() => handleDayClick(day.date)}
-                                className={cn(
-                                    "group min-h-0 border-r border-b border-black dark:border-white/10 p-2 flex flex-col justify-center items-center transition-all cursor-pointer relative bg-white dark:bg-transparent overflow-hidden",
-                                    !day.isCurrentMonth && "bg-gray-50/50 dark:bg-white/5",
-                                    day.isToday && !day.isSelected && "bg-gray-100 dark:bg-white/10 ring-1 ring-inset ring-black/10 dark:ring-white/10",
-                                    day.isSelected ? "z-10 bg-white dark:bg-transparent" : "hover:bg-gray-50 dark:hover:bg-white/5"
-                                )}
-                            >
-                                <div className={cn(
-                                    "w-8 h-8 flex items-center justify-center rounded-full transition-all",
-                                    day.isSelected ? "bg-black dark:bg-white text-white dark:text-black" : "text-black dark:text-white",
-                                    !day.isCurrentMonth && !day.isSelected && "text-gray-300 dark:text-gray-600",
-                                    day.isToday && !day.isSelected && "ring-2 ring-black dark:ring-white font-black"
-                                )}>
-                                    <span className={cn("text-lg font-bold")}>
-                                        {day.date.getDate()}
-                                    </span>
-                                </div>
+                        <div className="flex-1 grid grid-cols-7 grid-rows-6 auto-rows-fr bg-gray-50/20 dark:bg-transparent">
+                            {days.map((day, idx) => {
+                                const dayEvents = events.filter((e: any) => new Date(e.start_time).toLocaleDateString() === day.date.toLocaleDateString());
+                                const dayTasks = tasks.filter((t: any) => t.due_date && new Date(t.due_date).toLocaleDateString() === day.date.toLocaleDateString());
                                 
-                                <div className="flex gap-1.5 items-center mt-2 h-2">
-                                    {(dayTasks.length > 0) && <div className={cn("w-1.5 h-1.5 rounded-full bg-black dark:bg-white")}></div>}
-                                    {(dayEvents.length > 0) && <div className={cn("w-1.5 h-1.5 rounded-full border border-black dark:border-white bg-transparent")}></div>}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                                return (
+                                    <div 
+                                        key={idx} 
+                                        onClick={() => handleDayClick(day.date)}
+                                        className={cn(
+                                            "group min-h-0 border-r border-b border-black dark:border-white/10 p-2 flex flex-col justify-center items-center transition-all cursor-pointer relative bg-white dark:bg-transparent overflow-hidden",
+                                            !day.isCurrentMonth && "bg-gray-50/50 dark:bg-white/5",
+                                            day.isToday && !day.isSelected && "bg-gray-100 dark:bg-white/10 ring-1 ring-inset ring-black/10 dark:ring-white/10",
+                                            day.isSelected ? "z-10 bg-white dark:bg-transparent" : "hover:bg-gray-50 dark:hover:bg-white/5"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full transition-all",
+                                            day.isSelected ? "bg-black dark:bg-white text-white dark:text-black" : "text-black dark:text-white",
+                                            !day.isCurrentMonth && !day.isSelected && "text-gray-300 dark:text-gray-600",
+                                            day.isToday && !day.isSelected && "ring-2 ring-black dark:ring-white font-black"
+                                        )}>
+                                            <span className={cn("text-sm sm:text-lg font-bold")}>
+                                                {day.date.getDate()}
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="flex gap-1.5 items-center mt-2 h-2">
+                                            {(dayTasks.length > 0) && <div className={cn("w-1.5 h-1.5 rounded-full bg-black dark:bg-white")}></div>}
+                                            {(dayEvents.length > 0) && <div className={cn("w-1.5 h-1.5 rounded-full border border-black dark:border-white bg-transparent")}></div>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Sidebar To-Do List */}
-            <div className="w-[340px] bg-white dark:bg-transparent flex flex-col h-full z-20 border-l border-black dark:border-white/10">
+            <div className="w-full lg:w-[340px] bg-white dark:bg-transparent flex flex-col h-full z-20 shrink-0">
                 <div className="px-6 py-8 border-b border-black dark:border-white/10 bg-white dark:bg-transparent">
                     <h3 className="text-2xl font-black text-black dark:text-white tracking-tight uppercase">
                         {selectedDate.toLocaleDateString(undefined, { weekday: 'long' })}
@@ -240,7 +203,7 @@ export const CalendarView: React.FC = () => {
                                 <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest py-2">No tasks remaining.</p>
                             )}
                             
-                            {selectedDateTasks.map(task => (
+                            {selectedDateTasks.map((task: any) => (
                                 <div key={task.id} className="p-3 bg-white dark:bg-transparent border border-gray-200 dark:border-white/10 rounded flex items-start gap-3 group transition-all hover:border-black dark:hover:border-white/30 cursor-default">
                                     <button onClick={() => toggleTaskStatus(task)} className="text-gray-300 dark:text-gray-500 hover:text-black dark:hover:text-white transition-colors shrink-0 mt-px">
                                         {task.status === 'done' ? <CheckCircle2 size={16} className="text-black dark:text-white"/> : <Circle size={16} className="dark:text-gray-400" />}
@@ -284,7 +247,7 @@ export const CalendarView: React.FC = () => {
                             {/* Inline Task Input */}
                             {showTaskInput && (
                                 <div className="p-3 bg-gray-50 dark:bg-white/5 border border-black dark:border-white/30 border-dashed flex items-center gap-3">
-                                    <Circle size={16} className="text-gray-300 dark:text-gray-600 flex-shrink-0" />
+                                    <Circle size={16} className="text-gray-300 dark:text-gray-600 shrink-0" />
                                     <input 
                                         autoFocus
                                         type="text"

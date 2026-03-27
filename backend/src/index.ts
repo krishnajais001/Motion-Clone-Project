@@ -17,6 +17,8 @@ import pageRoutes from './routes/page.routes';
 import taskRoutes from './routes/task.routes';
 import eventRoutes from './routes/event.routes';
 import whiteboardRoutes from './routes/whiteboard.routes';
+import projectRoutes from './routes/project.routes';
+import studyRoutes from './routes/study.routes';
 import { authenticate } from './middleware';
 
 const app = express();
@@ -44,6 +46,8 @@ app.use('/api/pages', pageRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/whiteboards', whiteboardRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/study', studyRoutes);
 
 /**
  * Example protected route.

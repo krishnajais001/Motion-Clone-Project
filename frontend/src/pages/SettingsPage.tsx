@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Settings, Shield, HelpCircle, Bell, User } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { useUser } from '@/hooks/useUser';
+import ProjectFooter from '@/components/ProjectFooter';
+import { cn } from '@/lib/utils';
 
 /* ─── tiny reusable input ─── */
 function SettingsInput({
@@ -25,8 +27,8 @@ function SettingsInput({
     autoComplete?: string;
 }) {
     return (
-        <div className="space-y-1.5">
-            <label htmlFor={id} className="text-sm font-medium text-foreground">
+        <div className="space-y-2">
+            <label htmlFor={id} className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
                 {label}
             </label>
             <input
@@ -37,7 +39,7 @@ function SettingsInput({
                 placeholder={placeholder}
                 disabled={disabled}
                 autoComplete={autoComplete}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-12 w-full border-2 border-black dark:border-white/10 bg-transparent px-4 py-1 text-sm text-foreground transition-all placeholder:text-muted-foreground focus:border-black dark:focus:border-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 font-medium"
             />
         </div>
     );
@@ -47,10 +49,12 @@ function SettingsInput({
 function Feedback({ type, message }: { type: 'success' | 'error'; message: string }) {
     return (
         <div
-            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${type === 'success'
-                    ? 'border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400'
-                    : 'border-destructive/40 bg-destructive/10 text-destructive'
-                }`}
+            className={cn(
+                "flex items-center gap-3 border-2 px-4 py-3 text-[11px] font-bold uppercase tracking-wider transition-all",
+                type === 'success'
+                    ? 'border-black dark:border-white bg-black dark:bg-white text-white dark:text-black'
+                    : 'border-red-500 bg-red-500/10 text-red-500'
+            )}
         >
             {type === 'success' ? (
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -65,36 +69,33 @@ function Feedback({ type, message }: { type: 'success' | 'error'; message: strin
 
 /* ══════════════════════════════════════════════════════ */
 export default function SettingsPage() {
-    const [user, setUser] = useState<SupabaseUser | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'profile' | 'help'>('profile');
+    const { user, isLoading, updateProfile, updateEmail, updatePassword } = useUser();
+    const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'help'>('profile');
 
     /* ── name form ── */
     const [displayName, setDisplayName] = useState('');
     const [nameFeedback, setNameFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-    const [nameSaving, setNameSaving] = useState(false);
+    const [isSavingName, setIsSavingName] = useState(false);
 
     /* ── email form ── */
     const [newEmail, setNewEmail] = useState('');
     const [emailFeedback, setEmailFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-    const [emailSaving, setEmailSaving] = useState(false);
+    const [isSavingEmail, setIsSavingEmail] = useState(false);
 
     /* ── password form ── */
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [pwFeedback, setPwFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-    const [pwSaving, setPwSaving] = useState(false);
+    const [isSavingPw, setIsSavingPw] = useState(false);
 
-    /* ── load user ── */
+    /* ── initialize local state ── */
     useEffect(() => {
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            setUser(user);
+        if (user) {
             setDisplayName(user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? '');
             setNewEmail(user?.email ?? '');
-            setLoading(false);
-        });
-    }, []);
+        }
+    }, [user]);
 
     /* ── derived avatar letter ── */
     const avatarLetter = displayName?.trim()?.[0]?.toUpperCase()
@@ -108,21 +109,17 @@ export default function SettingsPage() {
             setNameFeedback({ type: 'error', msg: 'Name cannot be empty.' });
             return;
         }
-        setNameSaving(true);
+        setIsSavingName(true);
         setNameFeedback(null);
-        const { error } = await supabase.auth.updateUser({
-            data: { full_name: displayName.trim() },
-        });
-        setNameSaving(false);
-        if (error) {
-            setNameFeedback({ type: 'error', msg: error.message });
-        } else {
+        try {
+            await updateProfile({ full_name: displayName.trim() });
             setNameFeedback({ type: 'success', msg: 'Name updated successfully.' });
-            // refresh local user
-            const { data: { user: updated } } = await supabase.auth.getUser();
-            setUser(updated);
+        } catch (error: any) {
+            setNameFeedback({ type: 'error', msg: error.message });
+        } finally {
+            setIsSavingName(false);
         }
-    }, [displayName]);
+    }, [displayName, updateProfile]);
 
     /* ── update email ── */
     const handleSaveEmail = useCallback(async (e: React.FormEvent) => {
@@ -135,19 +132,20 @@ export default function SettingsPage() {
             setEmailFeedback({ type: 'error', msg: 'This is already your current email.' });
             return;
         }
-        setEmailSaving(true);
+        setIsSavingEmail(true);
         setEmailFeedback(null);
-        const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
-        setEmailSaving(false);
-        if (error) {
-            setEmailFeedback({ type: 'error', msg: error.message });
-        } else {
+        try {
+            await updateEmail(newEmail.trim());
             setEmailFeedback({
                 type: 'success',
-                msg: 'Confirmation email sent. Check your inbox to verify the new address.',
+                msg: 'Verification link sent to your new inbox.',
             });
+        } catch (error: any) {
+            setEmailFeedback({ type: 'error', msg: error.message });
+        } finally {
+            setIsSavingEmail(false);
         }
-    }, [newEmail, user?.email]);
+    }, [newEmail, user?.email, updateEmail]);
 
     /* ── update password ── */
     const handleSavePassword = useCallback(async (e: React.FormEvent) => {
@@ -164,259 +162,264 @@ export default function SettingsPage() {
             setPwFeedback({ type: 'error', msg: 'Passwords do not match.' });
             return;
         }
-        setPwSaving(true);
+        setIsSavingPw(true);
         setPwFeedback(null);
 
-        // Re-authenticate first to verify current password
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: user?.email ?? '',
-            password: currentPassword,
-        });
-        if (signInError) {
-            setPwSaving(false);
-            setPwFeedback({ type: 'error', msg: 'Current password is incorrect.' });
-            return;
-        }
+        try {
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: user?.email ?? '',
+                password: currentPassword,
+            });
+            if (signInError) {
+                setPwFeedback({ type: 'error', msg: 'Current password is incorrect.' });
+                return;
+            }
 
-        const { error } = await supabase.auth.updateUser({ password: newPassword });
-        setPwSaving(false);
-        if (error) {
-            setPwFeedback({ type: 'error', msg: error.message });
-        } else {
+            await updatePassword(newPassword);
             setPwFeedback({ type: 'success', msg: 'Password updated successfully.' });
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
+        } catch (error: any) {
+            setPwFeedback({ type: 'error', msg: error.message });
+        } finally {
+            setIsSavingPw(false);
         }
-    }, [currentPassword, newPassword, confirmPassword, user?.email]);
+    }, [currentPassword, newPassword, confirmPassword, user?.email, updatePassword]);
 
-    if (loading) {
+    if (isLoading) {
         return (
-            <div className="flex h-full items-center justify-center bg-white">
-                <div className="h-6 w-6 animate-spin rounded-none border-2 border-black border-t-white" />
+            <div className="flex h-full items-center justify-center bg-white dark:bg-black">
+                <div className="h-8 w-8 animate-spin rounded-none border-4 border-black border-t-transparent dark:border-white dark:border-t-transparent" />
             </div>
         );
     }
 
     return (
-        <div className="h-full overflow-y-auto bg-white dark:bg-background text-black dark:text-[#F0F0F0] transition-colors duration-300">
-            <div className="mx-auto max-w-4xl px-8 py-16">
+        <div className="h-full overflow-y-auto custom-scrollbar bg-white dark:bg-background text-black dark:text-white transition-colors duration-300 font-sans">
+            <div className="mx-auto max-w-5xl px-6 py-8 lg:py-12">
 
-                {/* ── Page Header ── */}
-                <div className="mb-12">
-                    <h1 className="text-3xl font-bold tracking-tight text-black dark:text-white">Workspace Settings</h1>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                        Manage your account details, preferences, and workspace configuration.
-                    </p>
-                </div>
-
-                {/* ── Tabs ── */}
-                <div className="flex gap-8 mb-10 border-b border-black/10 dark:border-white/10">
-                    <button 
-                        onClick={() => setActiveTab('profile')}
-                        className={`pb-4 text-sm font-medium transition-all relative ${
-                            activeTab === 'profile' ? 'text-black dark:text-white' : 'text-gray-400 hover:text-black dark:hover:text-white'
-                        }`}
-                    >
-                        Profile
-                        {activeTab === 'profile' && (
-                            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-black dark:bg-white"></span>
-                        )}
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('help')}
-                        className={`pb-4 text-sm font-medium transition-all relative ${
-                            activeTab === 'help' ? 'text-black dark:text-white' : 'text-gray-400 hover:text-black dark:hover:text-white'
-                        }`}
-                    >
-                        Help & Support
-                        {activeTab === 'help' && (
-                            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-black dark:bg-white"></span>
-                        )}
-                    </button>
-                </div>
-
-                {/* ── Help Section ── */}
-                {activeTab === 'help' && (
-                    <div className="bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg p-10 animate-in fade-in duration-500">
-                        <div className="max-w-2xl">
-                            <h2 className="text-xl font-semibold text-black dark:text-white mb-6">Frequently Asked Questions</h2>
-                            
-                            <div className="space-y-6">
-                                <div className="border-b border-gray-100 dark:border-white/5 pb-6">
-                                    <h3 className="text-base font-medium text-black dark:text-white">How do I create a new page?</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">Click the `+` icon next to the Workspace header in your sidebar. To nest a sub-page, hover over an existing page and click its `+` icon.</p>
-                                </div>
-                                <div className="border-b border-gray-100 dark:border-white/5 pb-6">
-                                    <h3 className="text-base font-medium text-black dark:text-white">Can I change my password?</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">Yes. Head to the Profile tab on this settings page, verify your current password, and enter a new one securely.</p>
-                                </div>
-                                <div>
-                                    <h3 className="text-base font-medium text-black dark:text-white">How do I use my daily planner?</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">Go to 'My Planner' in the sidebar menu. Click on any date to view its schedule, then use the right-hand panel and click 'New Task' to organize your day.</p>
-                                </div>
-                            </div>
-
-                            <div className="mt-12 pt-8 border-t border-black/10 dark:border-white/10">
-                                <h2 className="text-sm font-medium text-black dark:text-white mb-2">Need direct assistance?</h2>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">You can reach out to our dedicated support team 24/7.</p>
-                                <a href="mailto:support@motion.style" className="inline-flex items-center text-sm font-medium text-black dark:text-white hover:underline underline-offset-4">
-                                    support@motion.style
-                                </a>
-                            </div>
+                {/* Tactical Header */}
+                <div className="mb-8 flex items-end justify-between border-b border-black dark:border-white pb-6">
+                    <div>
+                        <h1 className="text-xl font-black tracking-tighter mb-1 uppercase">Workspace Settings</h1>
+                        <p className="text-gray-500 dark:text-gray-400 text-[9px] font-black uppercase tracking-[0.2em] opacity-80">Configuration & Identity</p>
+                    </div>
+                    <div className="text-right flex flex-col items-end gap-1">
+                        <div className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30">Universal Time</div>
+                        <div className="text-sm font-black uppercase tracking-[0.2em] text-black dark:text-white tabular-nums">
+                            {new Date().toISOString().split('T')[0].split('-').join(' / ')}
                         </div>
                     </div>
-                )}
+                </div>
 
-                {/* ── Combined Settings Card (Profile) ── */}
+                {/* Tabs Navigation */}
+                <div className="flex flex-wrap gap-4 mb-12">
+                   {[
+                     { id: 'profile', label: 'Identity', icon: User },
+                     { id: 'security', label: 'Security', icon: Shield },
+                     { id: 'help', label: 'Suppport', icon: HelpCircle }
+                   ].map((tab) => (
+                     <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={cn(
+                            "px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 transition-all border-2",
+                            activeTab === tab.id 
+                                ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white"
+                                : "border-gray-100 dark:border-white/5 text-gray-400 hover:border-black dark:hover:border-white"
+                        )}
+                     >
+                        <tab.icon size={14} />
+                        {tab.label}
+                     </button>
+                   ))}
+                </div>
+
+                {/* Profile Tab */}
                 {activeTab === 'profile' && (
-                    <div className="border border-gray-200 dark:border-white/10 rounded-2xl bg-white dark:bg-white/5 overflow-hidden animate-in fade-in duration-500">
-                        {/* ── Profile Header ── */}
-                        <div className="flex items-center gap-6 p-10 bg-gray-50/50 dark:bg-white/5 border-b border-gray-100 dark:border-white/10">
-                            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-black dark:bg-white text-3xl font-medium text-white dark:text-black select-none">
+                    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        {/* Identity Banner */}
+                        <div className="p-8 lg:p-12 border-2 border-black dark:border-white flex flex-col md:flex-row items-center gap-8 lg:gap-12 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                                <User size={120} />
+                            </div>
+                            <div className="w-24 h-24 lg:w-32 lg:h-32 bg-black dark:bg-white text-white dark:text-black flex items-center justify-center text-4xl lg:text-5xl font-black shrink-0">
                                 {avatarLetter}
                             </div>
-                            <div className="min-w-0 flex-1">
-                                <p className="truncate text-2xl font-semibold text-black dark:text-white tracking-tight">
-                                    {displayName || 'Unnamed User'}
-                                </p>
-                                <p className="truncate text-base text-gray-500 dark:text-gray-400 mt-1">{user?.email}</p>
-                            </div>
-                            <div className="text-right shrink-0 self-start">
-                                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                                    Member since
-                                </p>
-                                <p className="text-sm font-medium text-black dark:text-white mt-1">
-                                    {user?.created_at
-                                        ? new Date(user.created_at).toLocaleDateString('en-US', {
-                                            month: 'long',
-                                            day: 'numeric',
-                                            year: 'numeric',
-                                        })
-                                        : '—'}
-                                </p>
+                            <div className="text-center md:text-left min-w-0 flex-1">
+                                <h2 className="text-3xl lg:text-4xl font-black tracking-tighter uppercase truncate mb-2">
+                                    {displayName || 'Untitled User'}
+                                </h2>
+                                <p className="text-sm font-bold opacity-40 uppercase tracking-widest truncate">{user?.email}</p>
+                                <div className="mt-6 flex flex-wrap justify-center md:justify-start gap-4">
+                                    <div className="px-3 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-500">
+                                        Joined {new Date(user?.created_at || '').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                    </div>
+                                    <div className="px-3 py-1 bg-green-500 text-white text-[9px] font-black uppercase tracking-widest">
+                                        Verified
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* ── Details Sections Container ── */}
-                        <div className="divide-y divide-gray-100 dark:divide-white/10">
-
-                            {/* ── Display Name ── */}
-                            <div className="p-10 flex flex-col md:flex-row gap-8">
-                                <div className="md:w-1/3 shrink-0">
-                                    <h2 className="text-base font-semibold text-black dark:text-white">Display Name</h2>
-                                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">This is the public name that will be displayed across your entire workspace.</p>
-                                </div>
-                                <div className="flex-1 max-w-lg">
-                                    <form onSubmit={handleSaveName} className="space-y-4">
-                                        <SettingsInput
-                                            id="settings-name"
-                                            label="Full name"
-                                            value={displayName}
-                                            onChange={setDisplayName}
-                                            placeholder="Your name"
-                                            disabled={nameSaving}
-                                            autoComplete="name"
-                                        />
-                                        {nameFeedback && (
-                                            <Feedback type={nameFeedback.type} message={nameFeedback.msg} />
-                                        )}
-                                        <div className="flex justify-end pt-2">
-                                            <Button type="submit" disabled={nameSaving} className="bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black rounded-md transition-colors text-sm px-6">
-                                                {nameSaving ? 'Saving…' : 'Save changes'}
-                                            </Button>
-                                        </div>
-                                    </form>
-                                </div>
+                        {/* Name Update Form */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 pt-8 border-t border-black/10 dark:border-white/10">
+                            <div className="lg:col-span-4">
+                                <h3 className="text-sm font-black uppercase tracking-[0.2em] mb-3">Display Name</h3>
+                                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider leading-relaxed">
+                                    Your alias across all collaborative spaces and ledgers.
+                                </p>
                             </div>
-
-                            {/* ── Email ── */}
-                            <div className="p-10 flex flex-col md:flex-row gap-8">
-                                <div className="md:w-1/3 shrink-0">
-                                    <h2 className="text-base font-semibold text-black dark:text-white">Email Address</h2>
-                                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Changing your email will require immediate verification from your new inbox.</p>
-                                </div>
-                                <div className="flex-1 max-w-lg">
-                                    <form onSubmit={handleSaveEmail} className="space-y-4">
-                                        <SettingsInput
-                                            id="settings-email"
-                                            label="Email address"
-                                            type="email"
-                                            value={newEmail}
-                                            onChange={setNewEmail}
-                                            placeholder="you@example.com"
-                                            disabled={emailSaving}
-                                            autoComplete="email"
-                                        />
-                                        {emailFeedback && (
-                                            <Feedback type={emailFeedback.type} message={emailFeedback.msg} />
-                                        )}
-                                        <div className="flex justify-end pt-2">
-                                            <Button type="submit" disabled={emailSaving} className="bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black rounded-md transition-colors text-sm px-6">
-                                                {emailSaving ? 'Saving…' : 'Update email'}
-                                            </Button>
-                                        </div>
-                                    </form>
-                                </div>
+                            <div className="lg:col-span-8 max-w-xl">
+                                <form onSubmit={handleSaveName} className="space-y-6">
+                                    <SettingsInput
+                                        id="settings-name"
+                                        label="Full Identity"
+                                        value={displayName}
+                                        onChange={setDisplayName}
+                                        placeholder="Enter name"
+                                        disabled={isSavingName}
+                                        autoComplete="name"
+                                    />
+                                    {nameFeedback && <Feedback type={nameFeedback.type} message={nameFeedback.msg} />}
+                                    <Button 
+                                        type="submit" 
+                                        disabled={isSavingName || displayName === (user?.user_metadata?.full_name ?? '')} 
+                                        className="h-12 px-8 bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-[10px] hover:opacity-90 disabled:opacity-30 transition-all rounded-none"
+                                    >
+                                        {isSavingName ? 'Syncing...' : 'Apply Update'}
+                                    </Button>
+                                </form>
                             </div>
+                        </div>
 
-                            {/* ── Password ── */}
-                            <div className="p-10 flex flex-col md:flex-row gap-8">
-                                <div className="md:w-1/3 shrink-0">
-                                    <h2 className="text-base font-semibold text-black dark:text-white">Password</h2>
-                                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Ensure your account is using a long, random password to stay secure.</p>
-                                </div>
-                                <div className="flex-1 max-w-lg">
-                                    <form onSubmit={handleSavePassword} className="space-y-4">
-                                        <SettingsInput
-                                            id="settings-current-password"
-                                            label="Current password"
-                                            type="password"
-                                            value={currentPassword}
-                                            onChange={setCurrentPassword}
-                                            placeholder="••••••••"
-                                            disabled={pwSaving}
-                                            autoComplete="current-password"
-                                        />
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <SettingsInput
-                                                id="settings-new-password"
-                                                label="New password"
-                                                type="password"
-                                                value={newPassword}
-                                                onChange={setNewPassword}
-                                                placeholder="••••••••"
-                                                disabled={pwSaving}
-                                                autoComplete="new-password"
-                                            />
-                                            <SettingsInput
-                                                id="settings-confirm-password"
-                                                label="Confirm new"
-                                                type="password"
-                                                value={confirmPassword}
-                                                onChange={setConfirmPassword}
-                                                placeholder="••••••••"
-                                                disabled={pwSaving}
-                                                autoComplete="new-password"
-                                            />
-                                        </div>
-                                        {pwFeedback && (
-                                            <Feedback type={pwFeedback.type} message={pwFeedback.msg} />
-                                        )}
-                                        <div className="flex justify-end pt-2">
-                                            <Button type="submit" disabled={pwSaving} className="bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black rounded-md transition-colors text-sm px-6">
-                                                {pwSaving ? 'Updating…' : 'Update password'}
-                                            </Button>
-                                        </div>
-                                    </form>
-                                </div>
+                        {/* Email Update Form */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 pt-12 border-t border-black/10 dark:border-white/10">
+                            <div className="lg:col-span-4">
+                                <h3 className="text-sm font-black uppercase tracking-[0.2em] mb-3">Email Vector</h3>
+                                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider leading-relaxed">
+                                    Primary contact for security and tactical notifications.
+                                </p>
                             </div>
-
+                            <div className="lg:col-span-8 max-w-xl">
+                                <form onSubmit={handleSaveEmail} className="space-y-6">
+                                    <SettingsInput
+                                        id="settings-email"
+                                        label="Email Address"
+                                        type="email"
+                                        value={newEmail}
+                                        onChange={setNewEmail}
+                                        placeholder="you@domain.com"
+                                        disabled={isSavingEmail}
+                                        autoComplete="email"
+                                    />
+                                    {emailFeedback && <Feedback type={emailFeedback.type} message={emailFeedback.msg} />}
+                                    <Button 
+                                        type="submit" 
+                                        disabled={isSavingEmail || newEmail === user?.email} 
+                                        className="h-12 px-8 bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-[10px] hover:opacity-90 disabled:opacity-30 transition-all rounded-none"
+                                    >
+                                        {isSavingEmail ? 'Routing...' : 'Update Vector'}
+                                    </Button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 )}
 
+                {/* Security Tab */}
+                {activeTab === 'security' && (
+                    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
+                            <div className="lg:col-span-4">
+                                <h3 className="text-sm font-black uppercase tracking-[0.2em] mb-3">Security Vault</h3>
+                                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider leading-relaxed">
+                                    Update your encryption pathway (password). Verification of current access is required.
+                                </p>
+                            </div>
+                            <div className="lg:col-span-8 max-w-xl">
+                                <form onSubmit={handleSavePassword} className="space-y-8">
+                                    <SettingsInput
+                                        id="settings-current-password"
+                                        label="Current Access Code"
+                                        type="password"
+                                        value={currentPassword}
+                                        onChange={setCurrentPassword}
+                                        placeholder="••••••••"
+                                        disabled={isSavingPw}
+                                        autoComplete="current-password"
+                                    />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <SettingsInput
+                                            id="settings-new-password"
+                                            label="New Access Code"
+                                            type="password"
+                                            value={newPassword}
+                                            onChange={setNewPassword}
+                                            placeholder="••••••••"
+                                            disabled={isSavingPw}
+                                            autoComplete="new-password"
+                                        />
+                                        <SettingsInput
+                                            id="settings-confirm-password"
+                                            label="Verification Code"
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={setConfirmPassword}
+                                            placeholder="••••••••"
+                                            disabled={isSavingPw}
+                                            autoComplete="new-password"
+                                        />
+                                    </div>
+                                    {pwFeedback && <Feedback type={pwFeedback.type} message={pwFeedback.msg} />}
+                                    <Button 
+                                        type="submit" 
+                                        disabled={isSavingPw} 
+                                        className="h-12 px-8 bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-[10px] hover:opacity-90 transition-all rounded-none"
+                                    >
+                                        {isSavingPw ? 'Encrypting...' : 'Update Vault Access'}
+                                    </Button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Help Section */}
+                {activeTab === 'help' && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {[
+                                { q: "How do I create a new page?", a: "Click the `+` icon next to the Workspace header in your sidebar. To nest a sub-page, click its internal `+` tactical button." },
+                                { q: "Can I reset my vaults?", a: "Individual ledger entries can be purged via the trash icon in Study Mode. Global account purge is available via HQ." },
+                                { q: "Universal Time Purpose?", a: "To maintain coordination across distributed workspace cycles and focus sessions." }
+                            ].map((item, idx) => (
+                                <div key={idx} className="p-8 border-2 border-black/5 dark:border-white/5 bg-transparent group hover:border-black dark:hover:border-white transition-all cursor-default">
+                                    <h4 className="text-xs font-black uppercase tracking-tighter mb-4 text-black dark:text-white">{item.q}</h4>
+                                    <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest leading-relaxed">
+                                        {item.a}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <div className="p-10 border-2 border-black dark:border-white text-center">
+                            <h3 className="text-xl font-black tracking-tighter uppercase mb-4">Tactical Support</h3>
+                            <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.3em] mb-8">Direct line to coordination headquarters.</p>
+                            <a href="mailto:hq@motion.style" className="inline-block px-12 py-4 bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-[0.4em] text-xs hover:opacity-80 transition-all">
+                                hq@motion.style
+                            </a>
+                        </div>
+                    </div>
+                )}
+
+                <div className="mt-20 pt-12 border-t border-black/10 dark:border-white/10 opacity-20 text-[9px] font-black uppercase tracking-[0.5em] text-center">
+                    Motion Tactical Workspace v2.4.0
+                </div>
+
             </div>
+            <ProjectFooter />
         </div>
     );
 }

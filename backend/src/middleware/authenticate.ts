@@ -70,10 +70,10 @@ export const authenticate = async (
 
         next();
     } catch (err: any) {
-        console.error('Auth Middleware Exception:', err.message);
+        console.error('❌ Auth Middleware EXCEPTION:', err);
         return res.status(500).json({
             error: 'Internal Server Error',
-            message: 'Authentication failed.',
+            message: err.message || 'Authentication failed.',
         });
     }
 };

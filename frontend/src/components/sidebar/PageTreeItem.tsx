@@ -1,14 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-    ChevronRight,
+    ChevronDown,
     Plus,
     FileText,
     Pencil,
     Trash2,
+    FolderInput,
+    Folder,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PageTreeNode } from '@/types';
+import { usePages } from '@/hooks/usePages';
+import { useProjects } from '@/hooks/useProjects';
 
 interface PageTreeItemProps {
     node: PageTreeNode;
@@ -33,16 +37,18 @@ export function PageTreeItem({
 }: PageTreeItemProps) {
     const navigate = useNavigate();
     const { id: activePageId } = useParams();
+    const { updatePage } = usePages();
+    const { projects } = useProjects();
     const [hovered, setHovered] = useState(false);
     const [isRenaming, setIsRenaming] = useState(false);
+    const [isMoving, setIsMoving] = useState(false);
     const [renameValue, setRenameValue] = useState(node.title);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const isExpanded = expandedIds.has(node.id);
-    const hasChildren = node.children.length > 0;
     const isActive = activePageId === node.id;
+    const hasChildren = node.children && node.children.length > 0;
 
-    // Focus & select all text when rename mode starts
     useEffect(() => {
         if (isRenaming && inputRef.current) {
             inputRef.current.focus();
@@ -50,18 +56,21 @@ export function PageTreeItem({
         }
     }, [isRenaming]);
 
-    const commitRename = () => {
-        const trimmed = renameValue.trim();
-        if (trimmed && trimmed !== node.title) {
-            onRename(node.id, trimmed);
-        } else {
-            setRenameValue(node.title); // revert if empty or unchanged
+    const handleToggle = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onToggleExpand(node.id);
+    };
+
+    const handleRenameSubmit = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (renameValue.trim() && renameValue !== node.title) {
+            onRename(node.id, renameValue.trim());
         }
         setIsRenaming(false);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') commitRename();
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') handleRenameSubmit();
         if (e.key === 'Escape') {
             setRenameValue(node.title);
             setIsRenaming(false);
@@ -69,108 +78,125 @@ export function PageTreeItem({
     };
 
     const handleItemClick = () => {
-        if (isRenaming) return;
+        if (isRenaming || isMoving) return;
         navigate(`/app/page/${node.id}`);
         if (onClick) onClick();
     };
 
+    const handleMove = async (projectId: string) => {
+        await updatePage({ id: node.id, patch: { project_id: projectId || null } });
+        setIsMoving(false);
+    };
+
     return (
-        <div>
+        <div className="relative">
             {/* Page row */}
             <div
                 className={cn(
-                    'group flex h-8 cursor-pointer items-center gap-0.5 rounded-md px-2 text-sm transition-all duration-150',
+                    'group flex h-8 items-center gap-1.5 rounded-md transition-all duration-200 cursor-pointer px-2',
                     isActive
-                        ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'
-                        : 'font-medium text-sidebar-foreground hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black',
+                        ? 'bg-black/5 dark:bg-white/10 text-sidebar-foreground font-semibold'
+                        : 'font-medium text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-sidebar-foreground',
                     isRenaming && 'bg-black/5 dark:bg-white/10'
                 )}
-                style={{ paddingLeft: `${level * 16 + 8}px` }}
+                style={{ paddingLeft: `${level * 8 + 4}px` }}
                 onClick={handleItemClick}
                 onMouseEnter={() => setHovered(true)}
-                onMouseLeave={() => setHovered(false)}
+                onMouseLeave={() => {
+                    setHovered(false);
+                    if (!isMoving) setIsMoving(false);
+                }}
             >
                 {/* Expand / collapse toggle */}
                 <button
                     className={cn(
-                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-sm transition-colors hover:bg-black/10 dark:hover:bg-white/10',
+                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-inherit transition-all hover:bg-black/10 dark:hover:bg-white/10',
                         !hasChildren && 'invisible'
                     )}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleExpand(node.id);
-                    }}
-                    aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                    onClick={handleToggle}
                 >
-                    <ChevronRight
+                    <ChevronDown
                         className={cn(
-                            'h-3.5 w-3.5 text-muted-foreground transition-transform duration-150',
-                            isExpanded && 'rotate-90'
+                            'h-3.5 w-3.5 transition-transform duration-200',
+                            !isExpanded && '-rotate-90'
                         )}
                     />
                 </button>
 
                 {/* Icon */}
-                <span className="mr-1 shrink-0 text-base leading-none">
-                    {node.emoji_icon || (
-                        <FileText className="h-4 w-4 text-muted-foreground/70" />
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center">
+                    {node.emoji_icon ? (
+                        <span className="text-[14px] leading-none">{node.emoji_icon}</span>
+                    ) : (
+                        <FileText className="h-4 w-4 opacity-50" />
                     )}
-                </span>
+                </div>
 
-                {/* Title OR inline input */}
-                {isRenaming ? (
-                    <input
-                        ref={inputRef}
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        onBlur={commitRename}
-                        onKeyDown={handleKeyDown}
-                        onClick={(e) => e.stopPropagation()}
-                        className="min-w-0 flex-1 truncate bg-transparent outline-none text-foreground text-sm font-medium"
-                    />
-                ) : (
-                    <span className="min-w-0 flex-1 truncate capitalize">{node.title}</span>
-                )}
+                {/* Title / Input */}
+                <div className="flex-1 overflow-hidden">
+                    {isRenaming ? (
+                        <input
+                            ref={inputRef}
+                            className="w-full border-none bg-transparent p-0 text-inherit outline-none focus:ring-0"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onBlur={() => handleRenameSubmit()}
+                            onKeyDown={handleKeyDown}
+                        />
+                    ) : (
+                        <span className="block truncate text-[13px]">{node.title || 'Untitled'}</span>
+                    )}
+                </div>
 
-                {/* Hover actions */}
+                {/* Actions (hover) */}
                 {!isRenaming && (
                     <div className={cn(
                         "flex shrink-0 items-center gap-0.5 transition-opacity duration-150",
-                        hovered ? "opacity-100" : "opacity-0"
+                        hovered || isMoving ? "opacity-100" : "opacity-0"
                     )}>
+                        {/* Move to Vault */}
+                        <button
+                            className="flex h-6 w-6 items-center justify-center rounded-sm text-inherit transition-all hover:bg-black/10 dark:hover:bg-white/10"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsMoving(!isMoving);
+                            }}
+                            title="Move to project"
+                        >
+                            <FolderInput className="h-3 w-3" />
+                        </button>
+
                         {/* Rename */}
                         <button
-                            className="flex h-6 w-6 items-center justify-center rounded-sm text-inherit transition-all hover:bg-white/20 dark:hover:bg-black/20"
+                            className="flex h-6 w-6 items-center justify-center rounded-sm text-inherit transition-all hover:bg-black/10 dark:hover:bg-white/10"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setRenameValue(node.title);
                                 setIsRenaming(true);
                             }}
-                            title="Rename"
                         >
                             <Pencil className="h-3 w-3" />
                         </button>
 
                         {/* Delete */}
                         <button
-                            className="flex h-6 w-6 items-center justify-center rounded-sm text-inherit transition-all hover:bg-white/20 dark:hover:bg-black/20"
+                            className="flex h-6 w-6 items-center justify-center rounded-sm text-inherit transition-all hover:bg-red-500/10 hover:text-red-500"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onDelete(node.id);
                             }}
-                            title="Delete"
                         >
                             <Trash2 className="h-3 w-3" />
                         </button>
 
                         {/* Add child */}
                         <button
-                            className="flex h-6 w-6 items-center justify-center rounded-sm text-inherit transition-all hover:bg-white/20 dark:hover:bg-black/20"
+                            className="flex h-6 w-6 items-center justify-center rounded-sm text-inherit transition-all hover:bg-black/10 dark:hover:bg-white/10"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onCreateChild(node.id);
                             }}
-                            title="Add page"
+                            title="Add sub-page"
                         >
                             <Plus className="h-3.5 w-3.5" />
                         </button>
@@ -178,10 +204,45 @@ export function PageTreeItem({
                 )}
             </div>
 
+            {/* Move Dropdown */}
+            {isMoving && (
+                <div 
+                    className="absolute right-2 top-full z-50 mt-1 min-w-[180px] rounded-md border border-sidebar-border bg-sidebar p-1 shadow-2xl backdrop-blur-xl"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-sidebar-border mb-1">Move to project...</p>
+                    <div className="flex flex-col gap-0.5 max-h-[200px] overflow-y-auto custom-scrollbar">
+                        {projects.map(p => (
+                            <button
+                                key={p.id}
+                                className={cn(
+                                    "flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/10 text-sidebar-foreground",
+                                    node.project_id === p.id && "bg-black/5 dark:bg-white/5 opacity-40 cursor-default"
+                                )}
+                                onClick={() => node.project_id !== p.id && handleMove(p.id)}
+                            >
+                                <Folder className="h-3 w-3 text-muted-foreground" />
+                                <span className="truncate">{p.name}</span>
+                            </button>
+                        ))}
+                        {projects.length === 0 && (
+                            <p className="px-2 py-2 text-xs text-muted-foreground italic">No projects created</p>
+                        )}
+                        <button
+                             className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/10 text-blue-500 mt-1 border-t border-sidebar-border"
+                             onClick={() => handleMove('')} // Remove from project
+                        >
+                            <FolderInput className="h-3 w-3" />
+                            <span className="truncate">Move to Independent</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Children (collapsible) */}
             {hasChildren && isExpanded && (
-                <div>
-                    {node.children.map((child) => (
+                <div className="border-l border-sidebar-border/30 ml-2">
+                    {node.children!.map((child) => (
                         <PageTreeItem
                             key={child.id}
                             node={child}

@@ -20,4 +20,3 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
     persistSession: false
   }
 });
-

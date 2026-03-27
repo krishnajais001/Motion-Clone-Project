@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Plus, MoreHorizontal, Calendar as CalendarIcon, Flag, CheckCircle2, Circle } from 'lucide-react';
-import { TaskService } from '../../lib/services/task.service';
-import type { Task, TaskStatus } from '../../lib/services/task.service';
+import type { TaskStatus } from '../../lib/services/task.service';
 import { cn } from '../../lib/utils';
+import { useTasks } from '@/hooks/useTasks';
 
 const COLUMNS: { label: string; value: TaskStatus; color: string; dot: string }[] = [
     { label: 'To Do', value: 'todo', color: 'bg-slate-200/50 dark:bg-white/5', dot: 'bg-slate-400' },
@@ -12,30 +12,19 @@ const COLUMNS: { label: string; value: TaskStatus; color: string; dot: string }[
 ];
 
 export const TaskBoard: React.FC<{ pageId?: string }> = ({ pageId }) => {
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchTasks = async () => {
-            try {
-                const data = await TaskService.getAll({ page_id: pageId });
-                setTasks(data);
-            } catch (err) {
-                console.error('Failed to fetch tasks:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchTasks();
-    }, [pageId]);
+    const { 
+        tasks, 
+        isLoading, 
+        createTask, 
+        updateTask 
+    } = useTasks(pageId);
 
     const handleAddTask = async (status: TaskStatus) => {
         const title = window.prompt('Task title:');
         if (!title) return;
 
         try {
-            const newTask = await TaskService.create({ title, status, page_id: pageId });
-            setTasks([...tasks, newTask]);
+            await createTask({ title, status, page_id: pageId });
         } catch (err) {
             console.error('Failed to create task:', err);
         }
@@ -43,14 +32,13 @@ export const TaskBoard: React.FC<{ pageId?: string }> = ({ pageId }) => {
 
     const handleUpdateStatus = async (id: string, status: TaskStatus) => {
         try {
-            const updatedTask = await TaskService.update(id, { status });
-            setTasks(tasks.map(t => t.id === id ? updatedTask : t));
+            await updateTask({ id, patch: { status } });
         } catch (err) {
             console.error('Failed to update task:', err);
         }
     };
 
-    if (loading) return <div className="p-8 text-slate-400">Loading tasks...</div>;
+    if (isLoading) return <div className="p-8 text-slate-400">Loading tasks...</div>;
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-6 overflow-x-auto">
@@ -61,7 +49,7 @@ export const TaskBoard: React.FC<{ pageId?: string }> = ({ pageId }) => {
                             <span className={cn("inline-block w-2 h-2 rounded-full", column.dot)}></span>
                             <h3 className="font-semibold text-slate-700 dark:text-gray-200">{column.label}</h3>
                             <span className="text-sm text-slate-400 dark:text-gray-500 font-medium">
-                                {tasks.filter(t => t.status === column.value).length}
+                                {tasks.filter((t: any) => t.status === column.value).length}
                             </span>
                         </div>
                         <button 
@@ -74,8 +62,8 @@ export const TaskBoard: React.FC<{ pageId?: string }> = ({ pageId }) => {
 
                     <div className={cn("flex flex-col gap-3 min-h-[500px] border-2 border-dashed border-slate-100 dark:border-white/5 rounded-xl p-2 transition-colors hover:border-slate-200 dark:hover:border-white/10", column.color)}>
                         {tasks
-                            .filter((t) => t.status === column.value)
-                            .map((task) => (
+                            .filter((t: any) => t.status === column.value)
+                            .map((task: any) => (
                                 <div 
                                     key={task.id}
                                     className="group bg-white dark:bg-[#1E1E1E] border border-slate-200 dark:border-white/10 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing hover:border-indigo-200 dark:hover:border-white/30"
