@@ -67,25 +67,22 @@ export default function HomePage() {
     ];
 
     return (
-        <div className="flex h-full flex-col overflow-y-auto custom-scrollbar bg-white dark:bg-black selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black">
-            <main className="flex-1 px-6 pt-10 pb-20 max-w-6xl mx-auto w-full">
+        <div className="flex h-full flex-col overflow-y-auto custom-scrollbar bg-white dark:bg-black selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black font-sans antialiased">
+            <main className="flex-1 px-6 pt-10 pb-20 max-w-5xl mx-auto w-full">
                 {/* Hero Section - Parallel Layout */}
-                <div className="mb-12 space-y-6">
-                    <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
-                        <h1 className="text-[clamp(3.5rem,12vw,7rem)] font-black leading-[0.75] tracking-tighter text-black dark:text-white uppercase select-none italic">
+                <div className="mb-10 space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <h1 className="text-[clamp(2.5rem,8vw,5.5rem)] font-black leading-[0.8] tracking-tighter uppercase select-none italic">
                             Motion.
                         </h1>
                         <div 
                             onClick={openSearch}
-                            className="group relative flex h-12 w-full lg:w-96 items-center border-2 border-black dark:border-white transition-all cursor-pointer hover:bg-black dark:hover:bg-white overflow-hidden active:scale-[0.98]"
+                            className="group relative flex h-12 w-full lg:w-96 items-center border border-black dark:border-white transition-all cursor-pointer hover:bg-black dark:hover:bg-white overflow-hidden active:scale-[0.98]"
                         >
                             <Search className="absolute left-4 h-4 w-4 text-black dark:text-white group-hover:text-white dark:group-hover:text-black" />
                             <span className="ml-12 text-[11px] font-black uppercase tracking-[0.25em] text-black dark:text-white group-hover:text-white dark:group-hover:text-black">
                                 Universal Search
                             </span>
-                            <kbd className="absolute right-4 hidden rounded border border-black/20 dark:border-white/20 px-1.5 py-0.5 text-[9px] font-bold text-black/40 dark:text-white/40 sm:inline-block group-hover:text-white dark:group-hover:text-black group-hover:border-white/20">
-                                CTRL K
-                            </kbd>
                         </div>
                     </div>
                     <p className="max-w-2xl text-xs sm:text-sm font-medium leading-relaxed text-black/40 dark:text-white/40 uppercase tracking-wide">

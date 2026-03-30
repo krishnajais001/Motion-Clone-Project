@@ -30,84 +30,129 @@ export default function StudyPage() {
   const accumulatedFocusTime = (subjects?.reduce((acc, s) => acc + s.time_spent_today, 0) || 0) + elapsedThisSession;
 
   // --- Stats Calculation ---
-  const { maxStudy, minStudy, currentStreak, maxStreak } = useMemo(() => {
+  const { maxStudy, minStudy, currentStreak, maxStreak, todayProgress, isTodaySecured } = useMemo(() => {
+    // Helper: Consistent local date string (YYYY-MM-DD)
+    const getLocalDateKey = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const todayStr = getLocalDateKey(new Date());
     const dailyTotals: Record<string, number> = {};
     
-    const todayStr = new Date().toISOString().split('T')[0];
+    // 1. Seed today with real-time data
     dailyTotals[todayStr] = accumulatedFocusTime;
 
+    // 2. Aggregate historical sessions using local dates
     sessions?.forEach(session => {
-      const date = session.timestamp.split('T')[0];
-      dailyTotals[date] = (dailyTotals[date] || 0) + session.duration;
+      try {
+        const sessionDate = new Date(session.timestamp);
+        const dateKey = getLocalDateKey(sessionDate);
+        if (dateKey !== todayStr) {
+          dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + session.duration;
+        }
+      } catch (e) {
+        console.error("Invalid session timestamp:", session.timestamp);
+      }
     });
 
+    const STREAK_THRESHOLD = 120; // 2 minutes (120s)
+    
+    // Performance stats
     const durations = Object.values(dailyTotals);
-    const max = durations.length > 0 ? Math.max(...durations) : 0;
-    const min = durations.filter(d => d > 0).length > 0 
-      ? Math.min(...durations.filter(d => d > 0)) 
-      : 0;
+    const maxProgressToday = Math.min(100, (accumulatedFocusTime / STREAK_THRESHOLD) * 100);
+    const isTodaySecured = accumulatedFocusTime >= STREAK_THRESHOLD;
 
-    // Streak calculation
-    let currentStreak = 0;
-    let maxStreak = 0;
-    let tempStreak = 0;
+    // 3. Calculate Maximum (Best) Streak ever achieved in history
+    let calculatedMaxStreak = 0;
+    const sortedDates = Object.keys(dailyTotals).sort();
     
-    const allDates = Object.keys(dailyTotals).sort();
-    
-    if (allDates.length > 0) {
-      let prevDate = new Date(allDates[0]);
+    if (sortedDates.length > 0) {
+      let tempStreak = 0;
+      let lastDate: Date | null = null;
       
-      allDates.forEach((dateKey, index) => {
-        const dayTotal = dailyTotals[dateKey] || 0;
-        const currentDate = new Date(dateKey);
-        
-        const diffTime = Math.abs(currentDate.getTime() - prevDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (dayTotal >= 120) {
-          if (diffDays <= 1 || index === 0) {
-            tempStreak++;
+      sortedDates.forEach((dateKey) => {
+        if ((dailyTotals[dateKey] || 0) >= STREAK_THRESHOLD) {
+          const currentDate = new Date(dateKey + 'T00:00:00');
+          if (lastDate) {
+            const diffDays = Math.round((currentDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+            if (diffDays === 1) {
+              tempStreak++;
+            } else {
+              tempStreak = 1;
+            }
           } else {
             tempStreak = 1;
           }
-          maxStreak = Math.max(maxStreak, tempStreak);
-        } else {
-          tempStreak = 0;
+          lastDate = currentDate;
+          calculatedMaxStreak = Math.max(calculatedMaxStreak, tempStreak);
         }
-        prevDate = currentDate;
       });
     }
 
+    // 4. Persistence Safety (The Best Streak Record)
+    let storedBest = 0;
+    try {
+      storedBest = parseInt(localStorage.getItem('motion_best_streak_v2') || '0');
+    } catch (e) {}
+    const finalBestStreak = Math.max(calculatedMaxStreak, storedBest);
+
+    // 5. Calculate Current Active Streak
+    let currentStreak = 0;
     let checkDate = new Date();
-    while (true) {
-      const dateKey = checkDate.toISOString().split('T')[0];
+    let isFirstDay = true;
+    
+    while (currentStreak < 10000) {
+      const dateKey = getLocalDateKey(checkDate);
       const dayTotal = dailyTotals[dateKey] || 0;
       
-      if (dayTotal >= 120) {
+      if (dayTotal >= STREAK_THRESHOLD) {
         currentStreak++;
         checkDate.setDate(checkDate.getDate() - 1);
+        isFirstDay = false;
       } else {
-        if (dateKey === todayStr) {
+        // If it's today and we haven't hit the threshold yet, streak is still "alive" from yesterday
+        if (isFirstDay && dateKey === todayStr) {
           checkDate.setDate(checkDate.getDate() - 1);
+          isFirstDay = false;
           continue;
         }
         break;
       }
     }
 
-    return { maxStudy: max, minStudy: min, currentStreak, maxStreak };
+    return { 
+      maxStudy: durations.length > 0 ? Math.max(...durations) : 0, 
+      minStudy: durations.filter(d => d >= STREAK_THRESHOLD).length > 0 ? Math.min(...durations.filter(d => d >= STREAK_THRESHOLD)) : 0, 
+      currentStreak, 
+      maxStreak: finalBestStreak,
+      todayProgress: maxProgressToday,
+      isTodaySecured
+    };
   }, [sessions, subjects, accumulatedFocusTime]);
+
+  // Persistent storage lock for the Record
+  useEffect(() => {
+    try {
+      const stored = parseInt(localStorage.getItem('motion_best_streak_v2') || '0');
+      if (maxStreak > stored) {
+        localStorage.setItem('motion_best_streak_v2', maxStreak.toString());
+      }
+    } catch (e) {}
+  }, [maxStreak]);
 
   const dailyRegistry = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const threeDaysAgo = new Date(today);
-    threeDaysAgo.setDate(today.getDate() - 2); 
+    const historyWindow = new Date(today);
+    historyWindow.setDate(today.getDate() - 7); 
 
     return sessions?.filter(session => {
       const sessionDate = new Date(session.timestamp);
       sessionDate.setHours(0, 0, 0, 0);
-      return sessionDate >= threeDaysAgo;
+      return sessionDate >= historyWindow;
     }) || [];
   }, [sessions]);
 
@@ -303,26 +348,49 @@ export default function StudyPage() {
           <div className="lg:col-span-5 space-y-8">
             
             {/* Total Stats Card */}
-            <div className="p-4 border border-black dark:border-white bg-transparent">
-              <div className="flex items-center justify-between mb-3">
+            <div className="p-4 border border-black dark:border-white bg-transparent relative overflow-hidden">
+              {/* Progress Background */}
+              <div 
+                className="absolute left-0 bottom-0 top-0 bg-primary/5 transition-all duration-1000 ease-out" 
+                style={{ width: `${todayProgress}%` }}
+              />
+              
+              <div className="flex items-center justify-between mb-3 relative z-10">
                 <div className="flex items-center gap-2 text-black dark:text-white opacity-60">
                     <Clock size={12} />
-                    <span className="text-[9px] font-black uppercase tracking-[0.25em]">Daily Accumulation</span>
+                    <span className="text-[9px] font-black uppercase tracking-[0.25em]">Study Ledger</span>
                 </div>
-                <div className="flex items-center gap-3 text-black dark:text-white font-black italic text-[9px] uppercase">
+                <div className="flex items-center gap-4 text-black dark:text-white font-black italic text-[9px] uppercase">
                     <div className="flex items-center gap-1">
-                        <Flame size={10} fill="currentColor" />
-                        <span>Current: {currentStreak}</span>
+                        <TrendingUp size={10} className="opacity-40" />
+                        <span className="opacity-40">Best: {maxStreak}</span>
                     </div>
-                    <div className="opacity-30">|</div>
                     <div className="flex items-center gap-1">
-                        <TrendingUp size={10} />
-                        <span>Best: {maxStreak}</span>
+                        <Flame size={10} className={cn(isTodaySecured ? "text-primary" : "opacity-30")} fill="currentColor" />
+                        <span className={cn(isTodaySecured ? "text-primary" : "opacity-60")}>
+                          {isTodaySecured ? " Secured" : ` Streak: ${currentStreak}`}
+                        </span>
                     </div>
                 </div>
               </div>
-              <div className="text-2xl font-black tracking-tighter tabular-nums text-black dark:text-white">
-                 {formatTime(accumulatedFocusTime)}
+              
+              <div className="flex items-end justify-between relative z-10">
+                <div className="text-2xl font-black tracking-tighter tabular-nums text-black dark:text-white">
+                   {formatTime(accumulatedFocusTime)}
+                </div>
+                {!isTodaySecured && (
+                  <div className="text-[8px] font-black uppercase tracking-widest opacity-40 mb-1">
+                    {Math.max(0, 120 - accumulatedFocusTime)}s to Streak
+                  </div>
+                )}
+              </div>
+              
+              {/* Progress Line */}
+              <div className="mt-4 h-1 bg-gray-100 dark:bg-white/5 relative">
+                <div 
+                  className={cn("h-full transition-all duration-1000 ease-out", isTodaySecured ? "bg-primary" : "bg-black dark:bg-white")} 
+                  style={{ width: `${todayProgress}%` }}
+                />
               </div>
             </div>
 
@@ -455,7 +523,7 @@ export default function StudyPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {!dailyRegistry || dailyRegistry.length === 0 ? (
               <div className="col-span-2 py-16 text-center border-2 border-dashed border-gray-100 dark:border-white/5">
-                <p className="text-gray-400 text-[10px] uppercase font-black tracking-[0.3em]">Vault Empty for the last 3 days.</p>
+                <p className="text-gray-400 text-[10px] uppercase font-black tracking-[0.3em]">Vault Empty for the last 7 days.</p>
               </div>
             ) : (
               dailyRegistry.map((session) => {

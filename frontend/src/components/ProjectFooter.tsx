@@ -8,9 +8,8 @@ export default function ProjectFooter() {
                         <h2 className="text-4xl font-black italic tracking-tighter uppercase select-none">
                             MOTION.
                         </h2>
-                        <p className="max-w-sm text-[13px] font-medium leading-relaxed opacity-40">
-                            Developed for high-performance productivity systems. <br />
-                            Designed for architects of thought.
+                        <p className="max-w-md text-[13px] font-medium leading-relaxed opacity-40">
+                            Motion redefines productivity as discipline — a high-performance workspace where projects, ideas, and focus converge into a single command system.
                         </p>
                     </div>
 

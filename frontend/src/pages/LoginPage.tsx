@@ -12,7 +12,8 @@ import {
     Database, 
     FileText,
     Sun,
-    Moon
+    Moon,
+    ChevronRight
 } from 'lucide-react';
 import ProjectFooter from '@/components/ProjectFooter';
 import { useUIStore } from '@/stores/useUIStore';
@@ -54,7 +55,7 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black font-sans antialiased overflow-y-auto custom-scrollbar">
-            <main className="max-w-6xl mx-auto w-full px-6 pt-10 pb-20">
+            <main className="max-w-5xl mx-auto w-full px-6 pt-10 pb-20">
                 {/* Hero Section */}
                 <div className="mb-10 space-y-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -90,10 +91,10 @@ export default function LoginPage() {
                             <span>Universal Time</span>
                         </div>
                         <div className="flex items-baseline justify-between gap-4">
-                            <div className="text-5xl font-black tabular-nums tracking-tighter">
+                            <div className="text-4xl font-black tabular-nums tracking-tighter">
                                 {time.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                             </div>
-                            <div className="text-[14px] font-black tracking-widest opacity-30 uppercase tabular-nums">
+                            <div className="text-[11px] font-black tracking-widest opacity-30 uppercase tabular-nums">
                                 {time.toISOString().split('T')[0].split('-').join(' / ')}
                             </div>
                         </div>
@@ -119,26 +120,44 @@ export default function LoginPage() {
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
                     {/* Architectural Tool Previews */}
                     <div className="md:col-span-4 space-y-4">
-                        <div className="border border-black dark:border-white p-6 opacity-30 pointer-events-none">
-                             <div className="flex items-center justify-between mb-4">
-                                <div className="border border-current p-1"><Calendar className="h-4 w-4" /></div>
+                        <div className="flex h-36 flex-col justify-between border-2 border-black dark:border-white bg-white text-black dark:bg-black dark:text-white p-5 sm:p-6 opacity-40 pointer-events-none">
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="border border-current p-1.5 rounded-sm"><Calendar className="h-4 w-4" /></div>
+                                </div>
+                                <h3 className="text-sm font-black uppercase tracking-tight">My Planner</h3>
+                                <p className="text-[10px] font-medium leading-snug opacity-70">Organize your schedule and tasks.</p>
                             </div>
-                            <h3 className="text-[14px] font-black uppercase tracking-tight">Strategic Chronology</h3>
-                            <p className="text-[10px] font-medium opacity-70">Orchestrate your timeline with zero friction.</p>
+                            <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.25em] opacity-40">
+                                <span>Execute</span>
+                                <ChevronRight className="h-2 w-2" />
+                            </div>
                         </div>
-                        <div className="border border-black dark:border-white p-6 opacity-30 pointer-events-none">
-                             <div className="flex items-center justify-between mb-4">
-                                <div className="border border-current p-1"><Timer className="h-4 w-4" /></div>
+                        <div className="flex h-36 flex-col justify-between border-2 border-black dark:border-white bg-black text-white dark:bg-white dark:text-black p-5 sm:p-6 opacity-40 pointer-events-none">
+                             <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="border border-current p-1.5 rounded-sm"><Timer className="h-4 w-4" /></div>
+                                </div>
+                                <h3 className="text-sm font-black uppercase tracking-tight">Study Mode</h3>
+                                <p className="text-[10px] font-medium leading-snug opacity-70">Focused session with pomodoro</p>
                             </div>
-                            <h3 className="text-[14px] font-black uppercase tracking-tight">Deep Focus Engine</h3>
-                            <p className="text-[10px] font-medium opacity-70">Isolate the signal from the noise.</p>
+                            <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.25em] opacity-40">
+                                <span>Execute</span>
+                                <ChevronRight className="h-2 w-2" />
+                            </div>
                         </div>
-                        <div className="border border-black dark:border-white p-6 opacity-30 pointer-events-none">
-                             <div className="flex items-center justify-between mb-4">
-                                <div className="border border-current p-1"><PenTool className="h-4 w-4" /></div>
+                        <div className="flex h-36 flex-col justify-between border-2 border-black dark:border-white bg-white text-black dark:bg-black dark:text-white p-5 sm:p-6 opacity-40 pointer-events-none">
+                             <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="border border-current p-1.5 rounded-sm"><PenTool className="h-4 w-4" /></div>
+                                </div>
+                                <h3 className="text-sm font-black uppercase tracking-tight">Whiteboard</h3>
+                                <p className="text-[10px] font-medium leading-snug opacity-70">Visualize your thoughts.</p>
                             </div>
-                            <h3 className="text-[14px] font-black uppercase tracking-tight">Spatial Ideation</h3>
-                            <p className="text-[10px] font-medium opacity-70">An infinite canvas for thinkers.</p>
+                            <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.25em] opacity-40">
+                                <span>Execute</span>
+                                <ChevronRight className="h-2 w-2" />
+                            </div>
                         </div>
                     </div>
 

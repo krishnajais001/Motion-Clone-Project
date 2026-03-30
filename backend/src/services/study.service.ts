@@ -19,12 +19,46 @@ export interface StudySession {
 
 export class StudyService {
   /**
-   * Fetch subjects, resetting daily if needed
+   * Internal helper to ensure study time is "sealed" into sessions when the day rolls over.
+   * Calling this before any fetch ensures consistency between subjects and sessions.
    */
-  static async getSubjects(userId: string): Promise<StudySubject[]> {
+  private static async ensureDailySync(userId: string) {
     const today = new Date().toISOString().split('T')[0];
     
-    // 1. Get raw subjects
+    const { data: subjects, error } = await supabaseAdmin
+      .from('study_subjects')
+      .select('*')
+      .eq('owner_id', userId);
+
+    if (error || !subjects) return;
+
+    const subjectsToReset = subjects.filter(s => s.last_reset_date !== today);
+    
+    if (subjectsToReset.length > 0) {
+      const historyEntries = subjectsToReset
+        .filter(s => s.time_spent_today > 0)
+        .map(s => ({
+          owner_id: userId,
+          subject_name: s.name,
+          duration: s.time_spent_today,
+          timestamp: s.last_reset_date
+        }));
+
+      if (historyEntries.length > 0) {
+        await supabaseAdmin.from('study_sessions').insert(historyEntries);
+      }
+
+      const idsToReset = subjectsToReset.map(s => s.id);
+      await supabaseAdmin
+        .from('study_subjects')
+        .update({ time_spent_today: 0, last_reset_date: today })
+        .in('id', idsToReset);
+    }
+  }
+
+  static async getSubjects(userId: string): Promise<StudySubject[]> {
+    await this.ensureDailySync(userId);
+
     const { data: subjects, error } = await supabaseAdmin
       .from('study_subjects')
       .select('*')
@@ -32,36 +66,6 @@ export class StudyService {
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-
-    // 2. Process resets for many rows if date mismatch
-    const subjectsToReset = subjects.filter(s => s.last_reset_date !== today);
-    
-    if (subjectsToReset.length > 0) {
-      // Seal yesterday's study time into history records first
-      const historyEntries = subjectsToReset
-        .filter(s => s.time_spent_today > 0)
-        .map(s => ({
-          owner_id: userId,
-          subject_name: s.name,
-          duration: s.time_spent_today,
-          timestamp: s.last_reset_date // Date work was actually performed
-        }));
-
-      if (historyEntries.length > 0) {
-        await supabaseAdmin.from('study_sessions').insert(historyEntries);
-      }
-
-      // Reset subjects in database
-      const idsToReset = subjectsToReset.map(s => s.id);
-      await supabaseAdmin
-        .from('study_subjects')
-        .update({ time_spent_today: 0, last_reset_date: today })
-        .in('id', idsToReset);
-        
-      // Return fresh data
-      return this.getSubjects(userId);
-    }
-
     return subjects;
   }
 
@@ -115,6 +119,8 @@ export class StudyService {
   }
 
   static async getSessions(userId: string) {
+    await this.ensureDailySync(userId);
+
     const { data, error } = await supabaseAdmin
       .from('study_sessions')
       .select('*')
