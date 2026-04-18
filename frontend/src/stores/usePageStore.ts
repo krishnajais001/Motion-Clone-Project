@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Page, Project } from '@/types';
+
 
 interface PageStore {
     /** 

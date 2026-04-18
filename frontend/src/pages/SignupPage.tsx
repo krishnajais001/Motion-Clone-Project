@@ -206,7 +206,7 @@ export default function SignupPage() {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="group flex-1 bg-white text-black dark:bg-black dark:text-white border-2 border-white dark:border-black p-5 text-sm font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 hover:bg-transparent hover:text-white dark:hover:text-black transition-all disabled:opacity-50"
+                                        className="group flex-1 bg-white text-black dark:bg-black dark:text-white border-2 border-transparent p-5 text-sm font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 hover:bg-gray-200 dark:hover:bg-gray-800 transition-all disabled:opacity-50"
                                     >
                                         {loading ? 'Initializing...' : (
                                             <>

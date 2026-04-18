@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CheckCircle2, AlertCircle, Settings, Shield, HelpCircle, Bell, User } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Shield, HelpCircle, User } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/hooks/useUser';

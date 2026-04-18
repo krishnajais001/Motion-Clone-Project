@@ -48,7 +48,7 @@ export const useTasks = (page_id?: string) => {
     updateTask: updateMutation.mutateAsync,
     deleteTask: deleteMutation.mutateAsync,
     // Provide a way to manually update a task optimistically for better UI feel
-    setTaskOptimistic: (task: Task) => {
+    setTaskOptimistic: (_task: Task) => {
         // Here you could implement simpler optimistic update if needed
     }
   };

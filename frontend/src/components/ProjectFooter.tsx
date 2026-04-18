@@ -14,7 +14,7 @@ export default function ProjectFooter() {
                     </div>
 
                     {/* Navigation Columns */}
-                    <div className="md:col-span-6 flex justify-end gap-16 md:gap-24">
+                    <div className="md:col-span-6 flex flex-wrap gap-10 md:justify-end md:gap-24 mt-8 md:mt-0">
                         {/* Archive Column */}
                         <div className="space-y-6">
                             <h4 className="text-[10px] font-black uppercase tracking-[0.5em] opacity-30">Archive</h4>
@@ -46,7 +46,7 @@ export default function ProjectFooter() {
             </div>
 
             {/* Bottom Bar */}
-            <div className="max-w-7xl mx-auto pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.5em] opacity-30">
+            <div className="max-w-7xl mx-auto pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.5em] opacity-30">
                 <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 md:gap-12">
                      <span className="whitespace-nowrap">© 2026 MT-SYS</span>
                      <span className="whitespace-nowrap">Developed by Krishna Jaiswal</span>

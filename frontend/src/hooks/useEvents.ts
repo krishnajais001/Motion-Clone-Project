@@ -26,7 +26,7 @@ export const useEvents = (range: { start: string; end: string }) => {
   // Mutation: Update event
   const updateMutation = useMutation({
     mutationFn: eventsApi.updateEvent,
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       // Also invalidate specific event if needed, but usually range query is enough
     },
